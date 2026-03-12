@@ -1,5 +1,6 @@
 
 import * as THREE from 'three'
+import * as CSG from '../libs/three-bvh-csg.js'
 
 class Reloj extends THREE.Object3D {
   constructor(tamanio) {

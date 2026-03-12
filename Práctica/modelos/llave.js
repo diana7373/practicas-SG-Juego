@@ -1,5 +1,6 @@
 
 import * as THREE from 'three'
+import * as CSG from '../libs/three-bvh-csg.js'
 
 class Llave extends THREE.Object3D {
   constructor(tamanio) {
@@ -7,7 +8,7 @@ class Llave extends THREE.Object3D {
     
     
     // El material se usa desde varios métodos. Por eso se alamacena en un atributo
-    this.material = new THREE.MeshStandardMaterial({color: 0xCF0000});
+    this.material = new THREE.MeshStandardMaterial({color: 0xD9D9D9});
     
     var tamano = 0.15;   // 15 cm de largo. Las unidades son metros
 
@@ -24,9 +25,33 @@ class Llave extends THREE.Object3D {
   
   
   createCilindro (tama) {
-    // Se crea la parte móvil
     var cilindro = new THREE.Object3D();
+
+    var shape = createShapeRect()
+
+    var options = {
+      depth: 8,
+      steps: 2,
+      bevelEnabled: false
+    };
+
+    var geometry = new THREE.ExtrudeGeometry(shape, options);
+
+    const material = new THREE.MeshStandardMaterial({ color: 0xD9D9D9 });
+
+    const cilindro = new THREE.Mesh(geometry, material);
+
     return cilindro;
+  }
+
+  createShapeRect(){
+    const shape = new THREE.Shape();
+    shape.moveTo(0,0);
+    shape.lineTo(5,0);
+    shape.lineTo(5,2.5);
+    shape.lineTo(0,2.5);
+    shape.lineTo(0,0);
+    return shape;
   }
 
   createPrisma(tama){
