@@ -2,7 +2,7 @@
 import * as THREE from 'three'
 
 class Hueso extends THREE.Object3D {
-  constructor(gui,titleGui) {
+  constructor(tamanio) {
     super();
     
     
@@ -12,6 +12,7 @@ class Hueso extends THREE.Object3D {
     var tamano = 0.15;   // 15 cm de largo. Las unidades son metros
 
     //añadir aqui los metodos que crean el hueso
+    this.createBase(tamanio)
 
   }
   

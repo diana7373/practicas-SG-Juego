@@ -8,7 +8,10 @@ import { TrackballControls } from 'trackball'
 
 // Clases de mi proyecto
 
-import { Grapadora } from './Grapadora.js'
+import { Hueso } from '/modelos/hueso.js'
+import { Llave } from '/modelos/llave.js'
+import { Pocion } from '/modelos/pocion.js'
+import { Reloj } from '/modelos/reloj.js'
 
  
 /// La clase fachada del modelo
@@ -49,8 +52,21 @@ class MyScene extends THREE.Scene {
     // Por último creamos el modelo.
     // El modelo puede incluir su parte de la interfaz gráfica de usuario. Le pasamos la referencia a 
     // la gui y el texto bajo el que se agruparán los controles de la interfaz que añada el modelo.
-    this.model = new Grapadora(this.gui, "Controles de la Grapadora");
-    this.add (this.model);
+    this.hueso = new Hueso();
+    this.llave = new Llave();
+    this.pocion = new Pocion();
+    this.reloj = new Reloj();
+
+    this.hueso.position.set(0, 0, 0);
+    this.llave.position.set(0.1, 0, 0);
+    this.pocion.position.set(-0.1, 0, 0);
+    this.reloj.position.set(0, 0, 0.1);
+
+    this.add (this.hueso);
+    this.add (this.llave);
+    this.add (this.pocion);
+    this.add (this.reloj);
+
   }
   
   createCamera () {

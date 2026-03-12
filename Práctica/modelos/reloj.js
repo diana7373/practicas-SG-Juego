@@ -2,10 +2,8 @@
 import * as THREE from 'three'
 
 class Reloj extends THREE.Object3D {
-  constructor(gui,titleGui) {
+  constructor(tamanio) {
     super();
-    
-    
     // El material se usa desde varios métodos. Por eso se alamacena en un atributo
     this.material = new THREE.MeshStandardMaterial({color: 0xCF0000});
     

@@ -2,7 +2,7 @@
 import * as THREE from 'three'
 
 class Pocion extends THREE.Object3D {
-  constructor(gui,titleGui) {
+  constructor(tamanio) {
     super();
     
     
