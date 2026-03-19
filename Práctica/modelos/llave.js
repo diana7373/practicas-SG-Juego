@@ -13,6 +13,9 @@ class Llave extends THREE.Object3D {
     var tamano = 0.15;   // 15 cm de largo. Las unidades son metros
 
     //añadir aqui los metodos que crean la llave
+    var rectangulo = this.createRect(tamano);
+
+    this.add(rectangulo)
 
   }
   
@@ -24,9 +27,7 @@ class Llave extends THREE.Object3D {
   }
   
   
-  createCilindro (tama) {
-    var cilindro = new THREE.Object3D();
-
+  createRect (tama) {
     var shape = createShapeRect()
 
     var options = {
@@ -37,11 +38,9 @@ class Llave extends THREE.Object3D {
 
     var geometry = new THREE.ExtrudeGeometry(shape, options);
 
-    const material = new THREE.MeshStandardMaterial({ color: 0xD9D9D9 });
+    const rectangulo = new THREE.Mesh(geometry, this.material);
 
-    const cilindro = new THREE.Mesh(geometry, material);
-
-    return cilindro;
+    return rectangulo;
   }
 
   createShapeRect(){

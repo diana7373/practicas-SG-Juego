@@ -52,7 +52,7 @@ class MyScene extends THREE.Scene {
     // Por último creamos el modelo.
     // El modelo puede incluir su parte de la interfaz gráfica de usuario. Le pasamos la referencia a 
     // la gui y el texto bajo el que se agruparán los controles de la interfaz que añada el modelo.
-    this.hueso = new Hueso();
+    this.hueso = new Hueso(2);
     //this.llave = new Llave();
     //this.pocion = new Pocion();
     //this.reloj = new Reloj();
@@ -230,9 +230,9 @@ class MyScene extends THREE.Scene {
     this.cameraControl.update();
     
     // Se actualiza el resto del modelo
-    this.llave.update();
-    this.pocion.update();
-    this.reloj.update();
+    //this.llave.update();
+    //this.pocion.update();
+    //this.reloj.update();
     this.hueso.update();
     
     // Este método debe ser llamado cada vez que queramos visualizar la escena de nuevo.

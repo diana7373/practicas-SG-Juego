@@ -8,9 +8,9 @@ class Hueso extends THREE.Object3D {
 
     this.createBase(tamanio);
     var material = new THREE.MeshStandardMaterial({color: 0x34AAE6});
-    var cuerpo = this.createBase(2);
-    var superior = this.createExtremos(2);
-    var inferior = this.createExtremos(2);
+    var cuerpo = this.createBase(tamanio);
+    var superior = this.createExtremos(tamanio);
+    var inferior = this.createExtremos(tamanio);
 
     inferior.position.set(0,-tamanio/2,0);
     superior.position.set(0,tamanio/2,0);
@@ -18,11 +18,11 @@ class Hueso extends THREE.Object3D {
     var figura = new CSG.Brush(cuerpo, material);
     var evaluador = new CSG.Evaluator();
 
-    var primer_resultado = evaluador.Evaluate(superior,cuerpo,CSG.ADDITION);
-    var segundo_resultado = evaluador.Evaluate(primer_resultado,inferior,CSG.ADDITION);
 
-    return segundo_resultado;
+    var primer_resultado = evaluador.evaluate(superior,figura,CSG.ADDITION);
+    var segundo_resultado = evaluador.evaluate(primer_resultado,inferior,CSG.ADDITION);
 
+    this.add(segundo_resultado);
   }
   
   createBase(tamanio) {
@@ -45,14 +45,14 @@ class Hueso extends THREE.Object3D {
     var esfera = new THREE.SphereGeometry();
     var esfera2 = new THREE.SphereGeometry();
 
-    this.esfera.translate(-1,0,0);
-    this.esfera2.translate(1,0,0);
+    esfera.translate(-1,0,0);
+    esfera2.translate(1,0,0);
 
     var figura = new CSG.Brush(esfera, material);
     var figura2 = new CSG.Brush(esfera2, material);
 
     var evaluador = new CSG.Evaluator();
-    var resultado1 = evaluador.Evaluate(figura, figura2, CSG.ADDITION);
+    var resultado1 = evaluador.evaluate(figura, figura2, CSG.ADDITION);
 
     return resultado1;
   }
