@@ -8,8 +8,8 @@ import { TrackballControls } from 'trackball'
 
 // Clases de mi proyecto
 
-import { Hueso } from './modelos/hueso.js'
-//import { Llave } from './modelos/llave.js'
+//import { Hueso } from './modelos/hueso.js'
+import { Llave } from './modelos/llave.js'
 //import { Pocion } from './modelos/pocion.js'
 //import { Reloj } from './modelos/reloj.js'
 
@@ -41,7 +41,7 @@ class MyScene extends THREE.Scene {
     this.createCamera ();
     
     // Un suelo 
-    this.createGround ();
+    //this.createGround ();
     
     // Y unos ejes. Imprescindibles para orientarnos sobre dónde están las cosas
     // Todas las unidades están en metros
@@ -52,18 +52,18 @@ class MyScene extends THREE.Scene {
     // Por último creamos el modelo.
     // El modelo puede incluir su parte de la interfaz gráfica de usuario. Le pasamos la referencia a 
     // la gui y el texto bajo el que se agruparán los controles de la interfaz que añada el modelo.
-    this.hueso = new Hueso(2);
-    //this.llave = new Llave();
+    //this.hueso = new Hueso(2);
+    this.llave = new Llave();
     //this.pocion = new Pocion();
     //this.reloj = new Reloj();
 
-    this.hueso.position.set(0, 0, 0);
-    //this.llave.position.set(0.1, 0, 0);
+    //this.hueso.position.set(0, 0, 0);
+    this.llave.position.set(0.1, 0, 0);
     //this.pocion.position.set(-0.1, 0, 0);
     //this.reloj.position.set(0, 0, 0.1);
 
-    this.add (this.hueso);
-    //this.add (this.llave);
+    //this.add (this.hueso);
+    this.add (this.llave);
     //this.add (this.pocion);
     //this.add (this.reloj);
 
@@ -230,10 +230,10 @@ class MyScene extends THREE.Scene {
     this.cameraControl.update();
     
     // Se actualiza el resto del modelo
-    //this.llave.update();
+    this.llave.update();
     //this.pocion.update();
     //this.reloj.update();
-    this.hueso.update();
+    //this.hueso.update();
     
     // Este método debe ser llamado cada vez que queramos visualizar la escena de nuevo.
     // Literalmente le decimos al navegador: "La próxima vez que haya que refrescar la pantalla, llama al método que te indico".
