@@ -9,9 +9,9 @@ import { TrackballControls } from 'trackball'
 // Clases de mi proyecto
 
 //import { Hueso } from './modelos/hueso.js'
-import { Llave } from './modelos/llave.js'
+//import { Llave } from './modelos/llave.js'
 //import { Pocion } from './modelos/pocion.js'
-//import { Reloj } from './modelos/reloj.js'
+import { Reloj } from './modelos/reloj.js'
 
  
 /// La clase fachada del modelo
@@ -55,7 +55,7 @@ class MyScene extends THREE.Scene {
     //this.hueso = new Hueso(2);
     //this.llave = new Llave();
     //this.pocion = new Pocion();
-    this.reloj = new Reloj();
+    this.reloj = new Reloj(1);
 
     //this.hueso.position.set(0, 0, 0);
     //this.llave.position.set(0.1, 0, 0);
@@ -165,8 +165,16 @@ class MyScene extends THREE.Scene {
     this.pointLight = new THREE.SpotLight( 0xffffff );
     this.pointLight.power = this.guiControls.lightPower;
     this.pointLight.position.set( 2, 3, 1 );
+
+    this.pointLight2 = new THREE.SpotLight( 0xffffff );
+    this.pointLight2.power = this.guiControls.lightPower * 0.5; // más suave
+    this.pointLight2.position.set( -2, 3, -1 );
+
+
     console.log (this.pointLight);
     this.add (this.pointLight);
+    console.log (this.pointLight2);
+    this.add (this.pointLight2);
   }
   
   setLightPower (valor) {
