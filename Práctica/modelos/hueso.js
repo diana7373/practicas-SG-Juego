@@ -7,13 +7,14 @@ class Hueso extends THREE.Object3D {
     super();
 
     this.createBase(tamanio);
-    var material = new THREE.MeshStandardMaterial({color: 0x34AAE6});
-    var cuerpo = this.createBase(tamanio);
-    var superior = this.createExtremos(tamanio);
-    var inferior = this.createExtremos(tamanio);
+    var material = new THREE.MeshStandardMaterial({color: 0xF7F3F2});
+    var cuerpo = this.createBase(tamanio*1);
+    var superior = this.createExtremos(tamanio*0.9, material);
+    var inferior = this.createExtremos(tamanio*0.9, material);
 
-    inferior.position.set(0,-tamanio/2,0);
-    superior.position.set(0,tamanio/2,0);
+    superior.geometry.translate(0,tamanio*1.1,0);
+    inferior.geometry.translate(0,-tamanio*3.2,0);
+    cuerpo.translate(0,-tamanio*3.4,0);
 
     var figura = new CSG.Brush(cuerpo, material);
     var evaluador = new CSG.Evaluator();
@@ -25,37 +26,61 @@ class Hueso extends THREE.Object3D {
     this.add(segundo_resultado);
   }
   
-  createBase(tamanio) {
-    // El nodo del que van a colgar la caja y los 2 conos y que se va a devolver
+createBase(tamanio) {
+  var perfil2D = [];
 
+  // Centro inferior
+  perfil2D.push(new THREE.Vector2(0, 0));
 
-    var perfil2D = [];
-    perfil2D.push(new THREE.Vector2(0.0,0.0));
-    perfil2D.push(new THREE.Vector2(tamanio,0.0));
-    perfil2D.push(new THREE.Vector2(tamanio, tamanio));
-    perfil2D.push(new THREE.Vector2(0.0,tamanio));
-    
-    var geometria = new THREE.LatheGeometry(perfil2D, 24,0,Math.PI * 2);
-    return geometria;
-  }
+  // Base inferior (más pequeña que antes)
+  perfil2D.push(new THREE.Vector2(tamanio * 0.25, 0));
+  perfil2D.push(new THREE.Vector2(tamanio * 0.30, tamanio * 0.1));
+  perfil2D.push(new THREE.Vector2(tamanio * 0.32, tamanio * 0.25));
+  perfil2D.push(new THREE.Vector2(tamanio * 0.30, tamanio * 0.4));
+  perfil2D.push(new THREE.Vector2(tamanio * 0.26, tamanio * 0.6));
 
-  createExtremos(tamanio){
-    var material = new THREE.MeshStandardMaterial({color: 0x34AAE6});
+  // Transición hacia el centro
+  perfil2D.push(new THREE.Vector2(tamanio * 0.22, tamanio * 1.0));
+  perfil2D.push(new THREE.Vector2(tamanio * 0.18, tamanio * 1.4));
 
-    var esfera = new THREE.SphereGeometry();
-    var esfera2 = new THREE.SphereGeometry();
+  // Centro del hueso (parte más estrecha)
+  perfil2D.push(new THREE.Vector2(tamanio * 0.14, tamanio * 1.9));
+  perfil2D.push(new THREE.Vector2(tamanio * 0.12, tamanio * 2.3));
+  perfil2D.push(new THREE.Vector2(tamanio * 0.14, tamanio * 2.7));
 
-    esfera.translate(-1,0,0);
-    esfera2.translate(1,0,0);
+  // Volver a ensanchar un poco
+  perfil2D.push(new THREE.Vector2(tamanio * 0.18, tamanio * 3.1));
+  perfil2D.push(new THREE.Vector2(tamanio * 0.22, tamanio * 3.5));
 
-    var figura = new CSG.Brush(esfera, material);
-    var figura2 = new CSG.Brush(esfera2, material);
+  // Parte superior (también más pequeña)
+  perfil2D.push(new THREE.Vector2(tamanio * 0.26, tamanio * 3.9));
+  perfil2D.push(new THREE.Vector2(tamanio * 0.28, tamanio * 4.1));
+  perfil2D.push(new THREE.Vector2(tamanio * 0.26, tamanio * 4.3));
 
-    var evaluador = new CSG.Evaluator();
-    var resultado1 = evaluador.evaluate(figura, figura2, CSG.ADDITION);
+  // Cierre superior
+  perfil2D.push(new THREE.Vector2(tamanio * 0.20, tamanio * 4.5));
+  perfil2D.push(new THREE.Vector2(tamanio * 0.12, tamanio * 4.6));
+  perfil2D.push(new THREE.Vector2(0, tamanio * 4.62));
 
-    return resultado1;
-  }
+  return new THREE.LatheGeometry(perfil2D, 32);
+}
+
+createExtremos(tamanio, material) {
+  const radio = tamanio * 0.6;
+
+  const esfera1 = new THREE.SphereGeometry(radio, 32, 32);
+  const esfera2 = new THREE.SphereGeometry(radio, 32, 32);
+
+  // Separación entre las dos esferas
+  esfera1.translate(-radio * 0.8, 0, 0);
+  esfera2.translate(radio * 0.8, 0, 0);
+
+  const brush1 = new CSG.Brush(esfera1, material);
+  const brush2 = new CSG.Brush(esfera2, material);
+
+  const evaluador = new CSG.Evaluator();
+  return evaluador.evaluate(brush1, brush2, CSG.ADDITION);
+}
   
   
   update () {
