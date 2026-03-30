@@ -6,19 +6,35 @@ class Reloj extends THREE.Object3D {
   constructor(tamanio) {
     super();
     // El material se usa desde varios métodos. Por eso se alamacena en un atributo
-    this.material = new THREE.MeshStandardMaterial({color: 0xCF0000});
+    this.material = new THREE.MeshStandardMaterial({color: 0x82A1B1});
     
     var tamano = 0.15;   // 15 cm de largo. Las unidades son metros
 
-    //añadir aqui los metodos que crean la reloj de mano
+    var base = this.createBase() //hacerlo con tama pero por ahora asi para probar
+
+    var evaluador = new CSG.Evaluator();
+
+    var brush_base = new CSG.Brush(base,this.material); 
+
+    const resultado = evaluador.evaluate(brush_base);
+
+    this.add(resultado);
 
   }
   
-  createBase(tama) {
+  createBase() {
     // El nodo del que van a colgar la caja y los 2 conos y que se va a devolver
-    var base = new THREE.Object3D();
+    var points = [
+      new THREE.Vector2(0, 0),
+      new THREE.Vector2(2, 0),
+      new THREE.Vector2(2.2, 0.2),
+      new THREE.Vector2(2.2, 3),
+      new THREE.Vector2(0, 3),
+    ];
 
-    return base;
+     var geometry = new THREE.LatheGeometry(points);
+
+     return geometry;
   }
   
   
