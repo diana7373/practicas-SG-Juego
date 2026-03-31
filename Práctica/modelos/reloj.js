@@ -12,13 +12,16 @@ class Reloj extends THREE.Object3D {
     var base = this.createBase(tamanio) //hacerlo con tama pero por ahora asi para probar
     var tapa = this.createTapa(tamanio);
     var cilindro = this.createCilindroBoton(tamanio);
+    var fondo = this.createFondo(tamanio);
+    var boton = this.createBoton(tamanio);
 
     //tapa.geometry.translate(0, 0, 1); // posicionar la tapa sobre la base
     //this.add(tapa);
 
     this.add(base);
-
-    //this.add(cilindro);
+    this.add(fondo);
+    this.add(cilindro);
+    this.add(boton);
   }
 
 
@@ -108,10 +111,57 @@ class Reloj extends THREE.Object3D {
 
     var geometry = new THREE.LatheGeometry(perfil2D, 24, 0, Math.PI * 2);
 
+    geometry.rotateZ(-Math.PI / 2);
+    geometry.translate(-tama*1.15, 0, 0);
+
     var cilindro = new CSG.Brush(geometry, this.material);
 
     return cilindro;
   }
+
+  createFondo(tama) {
+    var geometry = new THREE.CircleGeometry(tama*0.8, 32); // radio, segmentos
+
+    var materialFondo = new THREE.MeshStandardMaterial({ color: 0xF7F6F2 });
+
+    geometry.rotateX(-Math.PI / 2);
+
+    var fondo = new CSG.Brush(geometry, materialFondo);
+
+    return fondo;
+  }
+
+  createBoton(tama) {
+    const shape = new THREE.Shape();
+    const spikes = 20;
+    const r1 = tama / 6;
+    const r2 = r1 * 1.2;
+
+    for (let i = 0; i < spikes * 2; i++) {
+      const angle = (i / (spikes * 2)) * Math.PI * 2;
+      const r = i % 2 === 0 ? r2 : r1;
+
+      const x = Math.cos(angle) * r;
+      const y = Math.sin(angle) * r;
+
+      if (i === 0) shape.moveTo(x, y);
+      else shape.lineTo(x, y);
+    }
+
+    shape.closePath();
+
+    const geometry = new THREE.ExtrudeGeometry(shape, {
+      depth: tama / 5,
+      bevelEnabled: true,
+      bevelSize: 0.02,
+      bevelThickness: 0.02
+    });
+
+    var boton = new CSG.Brush(geometry, this.material);
+
+    return boton;
+  }
+
 
 
   update() {
