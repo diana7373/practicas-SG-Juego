@@ -9,6 +9,12 @@ class Reloj extends THREE.Object3D {
   constructor(tamanio) {
     super();
 
+    this.anguloMin = THREE.MathUtils.degToRad(0);
+    this.anguloMax = THREE.MathUtils.degToRad(-120);
+    this.orientacion = 1;
+    this.angulo = 0;
+   
+
     var materialVidrio = new THREE.MeshPhysicalMaterial({
       color: 0xffffff,
       transmission: 1,
@@ -40,13 +46,10 @@ class Reloj extends THREE.Object3D {
     this.evaluador = new CSG.Evaluator();
 
     var base = this.createBase(tamanio) //hacerlo con tama pero por ahora asi para probar
-    var tapa = this.createTapa(tamanio);
-    tapa.geometry.translate(-0.86, -0.2, 0);
-    
+    this.tapa = this.createTapa(tamanio);
     var punto_rotacion_tapa_z = new THREE.Group();
-    punto_rotacion_tapa_z.add(tapa);
+    punto_rotacion_tapa_z.add(this.tapa);
     punto_rotacion_tapa_z.position.set(0.86, 0.2, 0);
-    punto_rotacion_tapa_z.rotation.z = -Math.PI / 2; // Girar para que la tapa quede en la posición correcta
 
     var cilindro = this.createCilindroBoton(tamanio);
     var fondo = this.createFondo(tamanio, materialFondo);
@@ -56,10 +59,9 @@ class Reloj extends THREE.Object3D {
     vidrio.geometry.translate(0, 0.2, 0);
 
     this.aguja = this.createAguja(tamanio, materialAguja);
-    this.aguja.position.set(0, 0, -0.098);
     this.punto_rotacion_aguja = new THREE.Group();
     this.punto_rotacion_aguja.add(this.aguja);
-    this.punto_rotacion_aguja.position.set(0, 0.02, 0.098);
+    this.punto_rotacion_aguja.position.set(0, 0.02, 0);
 
     var numeros = this.createNumerosRomanos(tamanio, materialNumeros);
 
@@ -71,6 +73,7 @@ class Reloj extends THREE.Object3D {
     this.add(vidrio);
     this.add(this.punto_rotacion_aguja);
     this.add(numeros);
+    this.rotation.z = -Math.PI / 2;
   }
 
 
@@ -127,6 +130,7 @@ class Reloj extends THREE.Object3D {
 
     const aguja = new CSG.Brush(geometry, material);
 
+
     return aguja;
   }
 
@@ -148,6 +152,7 @@ class Reloj extends THREE.Object3D {
     const evaluator = new CSG.Evaluator();
 
     var result = evaluator.evaluate(ovalo, caja, CSG.INTERSECTION);
+    result.geometry.translate(-0.86, -0.2, 0);
     return result;
   }
 
@@ -261,9 +266,28 @@ class Reloj extends THREE.Object3D {
 
 
   update() {
+    
     if (this.aguja) {
       this.aguja.rotation.y -= 0.01; 
+    } 
+    
+    if(this.tapa){
+      this.angulo -= 0.008 * this.orientacion 
+  
+      if(this.angulo <= this.anguloMax){
+        this.angulo = this.anguloMax
+        this.orientacion = -1
+      }else if (this.angulo >= this.anguloMin){
+        this.angulo = this.anguloMin
+        this.orientacion = 1;
+      }
+  
+      this.tapa.rotation.z = this.angulo;
     }
+    
+    this.rotation.y += 0.005;
+
+
   }
 }
 
