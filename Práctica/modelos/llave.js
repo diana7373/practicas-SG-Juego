@@ -75,6 +75,7 @@ class Llave extends THREE.Object3D {
     var cuerpo_rect2 = evaluador.evaluate(cuerpo_rect1,brush_rect2,CSG.ADDITION);
     var llave_det1 = evaluador.evaluate(cuerpo_rect2,brush_det1,CSG.ADDITION);
     var llave = evaluador.evaluate(llave_det1,brush_det2,CSG.SUBTRACTION);
+    llave.position.set(-0.09, 0, 0);
 
 
     this.add(llave);

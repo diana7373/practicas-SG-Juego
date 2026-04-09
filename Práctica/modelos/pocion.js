@@ -20,13 +20,13 @@ class Pocion extends THREE.Object3D {
       color: 0xffffff,
       transmission: 1,
       transparent: true,
-      opacity: 1,
+      opacity: 0.6,
 
-      roughness: 0.1,     // 🔥 evita artefactos
+      roughness: 0.1,     
       metalness: 0,
 
-      ior: 1.3,           // un poco más bajo = menos distorsión rara
-      thickness: 0.05,    // 🔥 MUY importante, no muy alto
+      ior: 1.3,           
+      thickness: 0.05,    
 
       clearcoat: 1,
       clearcoatRoughness: 0.1
@@ -39,12 +39,12 @@ class Pocion extends THREE.Object3D {
       color: 0x8bdbfc,     // color base (azul)
 
       transparent: true,
-      opacity: 0.6,        // 🔥 controla lo “traslúcido”
+      opacity: 0.6,        // controla lo “traslúcido”
 
       roughness: 0.2,      // un poco de difuminado
       metalness: 0,
 
-      transmission: 0.3,   // 🔥 leve transparencia real (no 1 como vidrio)
+      transmission: 0.3,   // leve transparencia real (no 1 como vidrio)
       ior: 1.2,            // menor que vidrio
 
       thickness: 0.02,     // bajo, es líquido

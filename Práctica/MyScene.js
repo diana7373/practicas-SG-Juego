@@ -9,9 +9,9 @@ import { TrackballControls } from 'trackball'
 // Clases de mi proyecto
 
 //import { Hueso } from './modelos/hueso.js'
-//import { Llave } from './modelos/llave.js'
+import { Llave } from './modelos/llave.js'
 //import { Pocion } from './modelos/pocion.js'
-import { Reloj } from './modelos/reloj.js'
+//import { Reloj } from './modelos/reloj.js'
 
  
 /// La clase fachada del modelo
@@ -45,7 +45,7 @@ class MyScene extends THREE.Scene {
     
     // Y unos ejes. Imprescindibles para orientarnos sobre dónde están las cosas
     // Todas las unidades están en metros
-    this.axis = new THREE.AxesHelper (0.1);
+    this.axis = new THREE.AxesHelper (0.4);
     this.add (this.axis);
     
     
@@ -53,19 +53,19 @@ class MyScene extends THREE.Scene {
     // El modelo puede incluir su parte de la interfaz gráfica de usuario. Le pasamos la referencia a 
     // la gui y el texto bajo el que se agruparán los controles de la interfaz que añada el modelo.
     //this.hueso = new Hueso(2);
-    //this.llave = new Llave();
+    this.llave = new Llave();
     //this.pocion = new Pocion(1);
-    this.reloj = new Reloj(1);
+    //this.reloj = new Reloj(1);
 
     //this.hueso.position.set(0, 0, 0);
-    //this.llave.position.set(0.1, 0, 0);
+    this.llave.position.set(0.1, 0, 0);
     //this.pocion.position.set(0, 0, 0);
-    this.reloj.position.set(0, 0, 0.1);
+    //this.reloj.position.set(0, 0, 0.1);
 
     //this.add (this.hueso);
-    //this.add (this.llave);
+    this.add (this.llave);
     //this.add (this.pocion);
-    this.add (this.reloj);
+    //this.add (this.reloj);
 
   }
   
@@ -168,7 +168,7 @@ class MyScene extends THREE.Scene {
 
     this.pointLight2 = new THREE.SpotLight( 0xffffff );
     this.pointLight2.power = this.guiControls.lightPower * 0.5; // más suave
-    this.pointLight2.position.set( -2, 3, -1 );
+    this.pointLight2.position.set( -2, -3, -1 );
 
 
     console.log (this.pointLight);
@@ -238,9 +238,9 @@ class MyScene extends THREE.Scene {
     this.cameraControl.update();
     
     // Se actualiza el resto del modelo
-    //this.llave.update();
+    this.llave.update();
     //this.pocion.update();
-    this.reloj.update();
+    //this.reloj.update();
     //this.hueso.update();
     
     // Este método debe ser llamado cada vez que queramos visualizar la escena de nuevo.
