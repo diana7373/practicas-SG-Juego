@@ -1,6 +1,6 @@
 
 import * as THREE from 'three'
-import * as CSG from '../libs/three-bvh-csg.js'
+import * as CSG from '../../libs/three-bvh-csg.js'
 
 class Hueso extends THREE.Object3D {
   constructor(tamanio) {

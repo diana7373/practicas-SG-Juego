@@ -1,6 +1,6 @@
 
 import * as THREE from 'three'
-import * as CSG from '../libs/three-bvh-csg.js'
+import * as CSG from '../../libs/three-bvh-csg.js'
 const puntosTapon = [
     new THREE.Vector2(0, 0),       // Inicio fondo centro
     new THREE.Vector2(0.22, 0),    // Base inferior

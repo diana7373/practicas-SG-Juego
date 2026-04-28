@@ -1,9 +1,9 @@
 
 import * as THREE from 'three'
-import * as CSG from '../libs/three-bvh-csg.js'
+import * as CSG from '../../libs/three-bvh-csg.js'
 
-import { FontLoader } from '../libs/FontLoader.js';
-import { TextGeometry } from '../libs/TextGeometry.js';
+import { FontLoader } from '../../libs/FontLoader.js';
+import { TextGeometry } from '../../libs/TextGeometry.js';
 
 class Reloj extends THREE.Object3D {
   constructor(tamanio) {
@@ -222,7 +222,7 @@ class Reloj extends THREE.Object3D {
     const grupo = new THREE.Object3D();
     const loader = new FontLoader();
 
-    loader.load('fonts/helvetiker_regular.typeface.json', (font) => {
+    loader.load('../../fonts/helvetiker_regular.typeface.json', (font) => {
         // 1. Array completo para evitar errores de geometría "undefined"
         const numeros = ['XII', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI'];
         
