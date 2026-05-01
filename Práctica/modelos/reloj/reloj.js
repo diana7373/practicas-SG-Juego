@@ -13,7 +13,7 @@ class Reloj extends THREE.Object3D {
     this.anguloMax = THREE.MathUtils.degToRad(-120);
     this.orientacion = 1;
     this.angulo = 0;
-   
+
 
     var materialVidrio = new THREE.MeshPhysicalMaterial({
       color: 0xffffff,
@@ -222,69 +222,84 @@ class Reloj extends THREE.Object3D {
     const grupo = new THREE.Object3D();
     const loader = new FontLoader();
 
-    loader.load('../../fonts/helvetiker_regular.typeface.json', (font) => {
-        // 1. Array completo para evitar errores de geometría "undefined"
-        const numeros = ['XII', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI'];
-        
-        // Radio donde se posicionan (un poco hacia adentro)
-        const radio = tama * 0.7; 
+    // Ruta absoluta calculada desde ESTE archivo reloj.js
+    const fontUrl = new URL(
+      '../../fonts/helvetiker_regular.typeface.json',
+      import.meta.url
+    ).href;
+
+    loader.load(
+      fontUrl,
+
+      (font) => {
+        const numeros = [
+          'XII', 'I', 'II', 'III',
+          'IV', 'V', 'VI', 'VII',
+          'VIII', 'IX', 'X', 'XI'
+        ];
+
+        const radio = tama * 0.7;
 
         for (let i = 0; i < 12; i++) {
-            const texto = numeros[i];
-            
-            const geometry = new TextGeometry(texto, {
-                font: font,
-                size: tama * 0.08,   
-                depth: tama * 0.01,   
-                curveSegments: 4,
-                bevelEnabled: false
-            });
+          const texto = numeros[i];
 
-            geometry.center(); // Centra el número en su propio eje
+          const geometry = new TextGeometry(texto, {
+            font: font,
+            size: tama * 0.08,
+            depth: tama * 0.01,
+            curveSegments: 4,
+            bevelEnabled: false
+          });
 
-            const mesh = new THREE.Mesh(geometry, material);
+          geometry.center();
 
-            // 2. Posicionamiento circular (XII arriba)
-            const angle = (i / 12) * Math.PI * 2 - Math.PI;
-            const x = Math.cos(angle) * radio;
-            const z = Math.sin(angle) * radio;
+          const mesh = new THREE.Mesh(geometry, material);
 
-            mesh.position.set(x, 0.021, z); // 0.021 para que no parpadee con el fondo
+          const angle = (i / 12) * Math.PI * 2 - Math.PI;
+          const x = Math.cos(angle) * radio;
+          const z = Math.sin(angle) * radio;
 
-            // 3. Rotación para que queden "acostados" sobre el reloj
-            // Giramos 90 grados en el eje X para que miren hacia arriba
-            mesh.rotation.x = -Math.PI / 2;
-            mesh.rotation.z = Math.PI / 2;
+          mesh.position.set(x, 0.021, z);
 
-            grupo.add(mesh);
+          mesh.rotation.x = -Math.PI / 2;
+          mesh.rotation.z = Math.PI / 2;
+
+          grupo.add(mesh);
         }
-    });
+      },
+
+      undefined,
+
+      (error) => {
+        console.error('No se pudo cargar la fuente del reloj:', fontUrl, error);
+      }
+    );
 
     return grupo;
-}
+  }
 
 
 
   update() {
-    
+
     if (this.aguja) {
-      this.aguja.rotation.y -= 0.01; 
-    } 
-    
-    if(this.tapa){
-      this.angulo -= 0.008 * this.orientacion 
-  
-      if(this.angulo <= this.anguloMax){
+      this.aguja.rotation.y -= 0.01;
+    }
+
+    if (this.tapa) {
+      this.angulo -= 0.008 * this.orientacion
+
+      if (this.angulo <= this.anguloMax) {
         this.angulo = this.anguloMax
         this.orientacion = -1
-      }else if (this.angulo >= this.anguloMin){
+      } else if (this.angulo >= this.anguloMin) {
         this.angulo = this.anguloMin
         this.orientacion = 1;
       }
-  
+
       this.tapa.rotation.z = this.angulo;
     }
-    
+
     this.rotation.y += 0.005;
 
 

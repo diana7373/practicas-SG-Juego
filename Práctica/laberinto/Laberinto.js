@@ -1,4 +1,6 @@
 import * as THREE from 'three'
+import { FontLoader } from '../libs/FontLoader.js';
+import { TextGeometry } from '../libs/TextGeometry.js';
 
 class Laberinto extends THREE.Object3D {
     
@@ -6,23 +8,62 @@ class Laberinto extends THREE.Object3D {
   static FREE   = " ";
   
   constructor (archivo, sincronizacion=null) {
+    //material
+    // Dentro de tu constructor o como método aparte
+    const loaderTextura = new THREE.TextureLoader();
+
+    // Cargamos las texturas (puedes añadir el truco del ?v=1 para el caché aquí también)
+    const baseColor = loaderTextura.load('texturas/PavingSto/PavingStonesColor.jpg');
+    const normalMap = loaderTextura.load('texturas/PavingSto/PavingStonesNormal.png');
+    const roughnessMap = loaderTextura.load('texturas/PavingSto/PavingStonesRoughness.png');
+    const aoMap = loaderTextura.load('texturas/PavingSto/PavingStonesAO.jpg');
+    const dispMap = loaderTextura.load('texturas/PavingSto/PavingStonesDisplacement.jpg');
+
+    // Creamos el material profesional
+    const bloqueMat = new THREE.MeshStandardMaterial({
+        map: baseColor,
+        normalMap: normalMap,
+        roughnessMap: roughnessMap,
+        roughness: 1.0,          // Se recomienda 1 cuando usas roughnessMap
+        aoMap: aoMap,            // Oclusión Ambiental (sombras en grietas)
+        aoMapIntensity: 1.0,     // Fuerza de las sombras de oclusión
+        displacementMap: dispMap, // Relieve real (mueve los vértices)
+        displacementScale: 0.05, // ¡OJO! Un valor pequeño (0.05 - 0.1) o el bloque explotará
+    });
+    
     super();
     
     // Medidas de un bloque
     this.anchoBloque = 1.0;
     this.altoBloque = 2.0;
+
+    // 3. Ajuste crucial en la Geometría
+    // Para que el DisplacementMap funcione, la caja necesita muchos segmentos.
+    // Si pones (1,1,1) no habrá vértices suficientes para deformar.
+    const bloqueGeo = new THREE.BoxGeometry(
+        this.anchoBloque, this.altoBloque, this.anchoBloque, 
+        64, 64, 64 // Añadimos segmentos para el relieve
+    );
+
+    // IMPORTANTE: Para que el AO (Ambient Occlusion) funcione en Three.js, 
+    // la geometría necesita un segundo set de coordenadas UV (uv2)
+    bloqueGeo.setAttribute('uv2', new THREE.Float32BufferAttribute(bloqueGeo.attributes.uv.array, 2));
+
+    bloqueGeo.translate(0, this.altoBloque / 2, 0);
+
     
     // La geometría compartida de un bloque
-    const bloqueGeo = new THREE.BoxGeometry (this.anchoBloque, this.altoBloque, this.anchoBloque);
+    //const bloqueGeo = new THREE.BoxGeometry (this.anchoBloque, this.altoBloque, this.anchoBloque);
     // Para que el sistema de referencia esté en la base
-    bloqueGeo.translate (0, this.altoBloque/2, 0);
+    //bloqueGeo.translate (0, this.altoBloque/2, 0);
     // El material compartido que vayáis a usar
-    const bloqueMat = new THREE.MeshNormalMaterial(blue);
+    //const bloqueMat = new THREE.MeshNormalMaterial();
         
     // Leemos el archivo, lo pasamos a un vector de string y lo procesamos 
     // para ir creando y añadiendo los bloques
     const loader = new THREE.FileLoader();
     loader.load( archivo, (file) => {
+      console.log("Contenido real del archivo cargado:\n", file);
       const laberintoMatriz = file.split (/\r?\n/);
       laberintoMatriz.pop(); // La última fila está vacía
       this.xNumBloques = laberintoMatriz[0].length;

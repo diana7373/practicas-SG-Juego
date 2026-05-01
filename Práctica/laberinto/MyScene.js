@@ -8,6 +8,9 @@ import { TrackballControls } from 'trackball'
 // Clases de mi proyecto
 
 import { Laberinto } from './Laberinto.js'
+import { Reloj } from '../modelos/reloj/reloj.js'
+import { FontLoader } from '../libs/FontLoader.js';
+import { TextGeometry } from '../libs/TextGeometry.js';
 
  
 /// La clase fachada del modelo
@@ -48,7 +51,7 @@ class MyScene extends THREE.Scene {
     // Por último creamos el modelo.
     // Le pasamos una variable de sincronizacion
     var laberintoCargado = $.Deferred();
-    this.laberinto = new Laberinto ("./laberinto.txt", laberintoCargado);
+    this.laberinto = new Laberinto("./mi_laberinto.txt", laberintoCargado);
     this.add (this.laberinto);
     laberintoCargado.done (() => {
       console.log ("Este bloque no se ejecuta hasta que se resuelve la variable de sincronización");
@@ -58,6 +61,11 @@ class MyScene extends THREE.Scene {
       // El método solo ha puesto la posicion x, z. Nos queda la posición y
       pickUp.position.y = 1;
     });
+
+    this.reloj = new Reloj(1);
+    this.reloj.scale.set(0.2, 0.2, 0.2);
+    this.reloj.position.set(0, 0.5, 0);
+    this.add(this.reloj);
   }
   
   createCamera () {
@@ -67,7 +75,7 @@ class MyScene extends THREE.Scene {
     //   Los planos de recorte cercano y lejano
     this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 100);
     // También se indica dónde se coloca
-    this.camera.position.set (0, 10, 10);
+    this.camera.position.set (0, 42, 48);
     // Y hacia dónde mira
     var look = new THREE.Vector3 (0,0,0);
     this.camera.lookAt(look);
@@ -84,26 +92,52 @@ class MyScene extends THREE.Scene {
     this.cameraControl.target = look;
   }
   
-  createGround () {
-    // El suelo es un Mesh, necesita una geometría y un material.
-    
-    // La geometría es una caja con muy poca altura
-    var geometryGround = new THREE.BoxGeometry (9,0.02,9);
-    
-    // El material se hará con una textura de madera
-    var texture = new THREE.TextureLoader().load('../imgs/wood.jpg');
-    var materialGround = new THREE.MeshStandardMaterial ({map: texture});
-    
-    // Ya se puede construir el Mesh
-    var ground = new THREE.Mesh (geometryGround, materialGround);
-    
-    // Todas las figuras se crean centradas en el origen.
-    // El suelo lo bajamos la mitad de su altura para que el origen del mundo se quede en su lado superior
+  createGround() {
+    // 1. Cargador y Variable de Versión para evitar el caché
+    const loader = new THREE.TextureLoader();
+
+    // 2. Carga de texturas del suelo
+    // Reemplaza estas rutas con tus archivos (ej. de la carpeta PavingSto o Madera)
+    const baseColor    = loader.load('texturas/Grass/GrassColor.jpg');
+    const normalMap    = loader.load('texturas/Grass/GrassNormal.png');
+    const roughnessMap = loader.load('texturas/Grass/GrassRoughness.png');
+    const aoMap        = loader.load('texturas/Grass/GrassAO.jpg');
+    const dispMap        = loader.load('texturas/Grass/GrassDisp.jpg');
+
+    // 3. Configurar Repetición (Tiling)
+    // Como el suelo mide 78x48, repetimos la textura para que se vea bien
+    [baseColor, normalMap, roughnessMap, aoMap, dispMap].forEach((tex) => {
+        tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+        tex.repeat.set(10, 8); // Ajusta estos números a tu gusto
+    });
+
+    // 4. Geometría con canal UV2 para el AO
+    const geometryGround = new THREE.BoxGeometry(78, 0.02, 48);
+    // IMPORTANTE: Esto evita que el material se vea negro al usar aoMap
+    geometryGround.setAttribute('uv2', new THREE.BufferAttribute(geometryGround.attributes.uv.array, 2));
+
+    // 5. Material Standard Profesional
+    const materialGround = new THREE.MeshStandardMaterial({
+        map: baseColor,
+        normalMap: normalMap,
+        roughnessMap: roughnessMap,
+        aoMap: aoMap,
+        aoMapIntensity: 1.0,
+        displacementMap: dispMap, // Relieve real (mueve los vértices)
+        displacementScale: 0.05, // ¡OJO! Un valor pequeño (0.05 - 0.1) o el bloque explotará
+        metalness: 0.0, // La madera o piedra no suelen ser metálicas
+        roughness: 1.0
+    });
+
+    // 6. Construcción del Mesh
+    const ground = new THREE.Mesh(geometryGround, materialGround);
     ground.position.y = -0.01;
     
-    // Que no se nos olvide añadirlo a la escena, que en este caso es  this
-    this.add (ground);
-  }
+    // El suelo debe recibir sombras si usas SpotLight
+    ground.receiveShadow = true; 
+
+    this.add(ground);
+}
   
   createGUI () {
     // Se crea la interfaz gráfica de usuario
@@ -222,11 +256,13 @@ class MyScene extends THREE.Scene {
     
     // Se actualiza el resto del modelo
     this.laberinto.update();
+
     
     // Este método debe ser llamado cada vez que queramos visualizar la escena de nuevo.
     // Literalmente le decimos al navegador: "La próxima vez que haya que refrescar la pantalla, llama al método que te indico".
     // Si no existiera esta línea,  update()  se ejecutaría solo la primera vez.
     requestAnimationFrame(() => this.update())
+    this.reloj.update();
   }
 }
 
@@ -242,4 +278,5 @@ $(function () {
   
   // Que no se nos olvide, la primera visualización.
   scene.update();
+
 });
