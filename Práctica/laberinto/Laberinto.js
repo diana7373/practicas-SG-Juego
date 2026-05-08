@@ -1,6 +1,5 @@
 import * as THREE from 'three'
-import { FontLoader } from '../libs/FontLoader.js';
-import { TextGeometry } from '../libs/TextGeometry.js';
+
 
 class Laberinto extends THREE.Object3D {
     
