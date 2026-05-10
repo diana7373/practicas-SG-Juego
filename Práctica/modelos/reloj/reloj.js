@@ -65,6 +65,19 @@ class Reloj extends THREE.Object3D {
 
     var numeros = this.createNumerosRomanos(tamanio, materialNumeros);
 
+    base.userData.root = this;
+    fondo.userData.root = this;
+    cilindro.userData.root = this;
+    boton.userData.root = this;
+    vidrio.userData.root = this;
+    numeros.userData.root = this;
+    base.userData.type = "RELOJ";
+    fondo.userData.type = "RELOJ";
+    cilindro.userData.type = "RELOJ";
+    boton.userData.type = "RELOJ";
+    vidrio.userData.type = "RELOJ";
+    numeros.userData.type = "RELOJ";
+
     this.add(base);
     this.add(fondo);
     this.add(cilindro);

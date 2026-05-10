@@ -1,55 +1,40 @@
-//Falta hacer los limites de las paredes con un raycaster para que no se pueda atravesar las paredes
-//Falta hacer la interaccion con los pickups de manera que con el rayo se recojan y una GUI que los muestre
+//GUI que los muestre los pickups que has cogido
 //Falta hacer una puerta y animarla cuando uses la lleve
 //Falta que cuando cojas la llave se te ponga en la mano
 //Falta poner materiales y texturas a los pickups
-//Falta hacer que no vaya tan lag el laberinto y hacer distintos tipos de paredes y suelos
-//Faltaria hacer una GUI con un contador y la funcionalidad del pickup
+//hacer distintos tipos de paredes y suelos
+//Faltaria hacer una GUI con un contador y el tiempo del reloj y la funcionalidad del pickup
 //Falta el arbol del pickup reloj
 //Falta un menu de pausa con opciones de reiniciar, salir, etc
-
-
-// Clases de la biblioteca
 
 import * as THREE from 'three'
 import { GUI } from 'gui'
 import { PointerLockControls } from '../libs/PointerLockControls.js'
 
-// Clases de mi proyecto
-
 import { Laberinto } from './Laberinto.js'
 import { Reloj } from '../modelos/reloj/reloj.js'
-import { FontLoader } from '../libs/FontLoader.js';
-import { TextGeometry } from '../libs/TextGeometry.js';
-
-
-/// La clase fachada del modelo
-/**
- * Usaremos una clase derivada de la clase Scene de Three.js para llevar el control de la escena y de todo lo que ocurre en ella.
- */
+import { FontLoader } from '../libs/FontLoader.js'
+import { TextGeometry } from '../libs/TextGeometry.js'
 
 class MyScene extends THREE.Scene {
-  // Recibe el  div  que se ha creado en el  html  que va a ser el lienzo en el que mostrar
-  // la visualización de la escena
+
   constructor(myCanvas) {
     super();
-    this.background = new THREE.Color(0xeeeeee);
-    this.fog = new THREE.Fog(0xeeeeee, 12, 28);
 
+    // Fondo oscuro y niebla de terror
+    this.background = new THREE.Color(0x050505);
+    this.fog = new THREE.FogExp2(0x050505, 0.12);
 
-
-
-
-    // Lo primero, crear el visualizador, pasándole el lienzo sobre el que realizar los renderizados.
+    // Renderer
     this.renderer = this.createRenderer(myCanvas);
 
-
+    // Jugador
     this.alturaJugador = 1.6;
     this.velocidadMovimiento = 8.0;
     this.clock = new THREE.Clock();
     this.teclas = new Set();
 
-    // Listeners de teclado
+    // Teclado
     window.addEventListener('keydown', (event) => {
       this.teclas.add(event.code);
       console.log('Tecla pulsada:', event.code);
@@ -59,55 +44,111 @@ class MyScene extends THREE.Scene {
       this.teclas.delete(event.code);
     });
 
-    this.moveForward = false;
-    this.moveBackward = false;
-    this.moveLeft = false;
-    this.moveRight = false;
+    // Click izquierdo / interacción
+    window.addEventListener('click', () => this.interaccionClick());
+
+    // Raycaster movimiento
+    this.rayoMovimiento = new THREE.Raycaster();
+    this.distanciaMovimiento = 0.3;
+    this.rayoMovimiento.far = this.distanciaMovimiento;
+
+    // Raycaster interacción
+    this.rayoInteraccion = new THREE.Raycaster();
+    this.distanciaInteraccion = 2.0;
+    this.rayoInteraccion.far = this.distanciaInteraccion;
 
     this.velocity = new THREE.Vector3();
     this.direction = new THREE.Vector3();
 
-    this.prevTime = performance.now();
-
-    // Se crea la interfaz gráfica de usuario
+    // GUI
     this.gui = this.createGUI();
 
-    // Construimos los distinos elementos que tendremos en la escena
-
-    // Todo elemento que se desee sea tenido en cuenta en el renderizado de la escena debe pertenecer a esta. Bien como hijo de la escena (this en esta clase) o como hijo de un elemento que ya esté en la escena.
-    // Tras crear cada elemento se añadirá a la escena con   this.add(variable)
+    // Luces
     this.createLights();
 
-    // Tendremos una cámara con un control de movimiento con el ratón
+    // Cámara
     this.createCamera();
 
-    // Un suelo 
+    // Linterna pegada a la cámara
+    this.createFlashLight();
+
+    // Suelo
     this.createGround();
 
-    // Y unos ejes. Imprescindibles para orientarnos sobre dónde están las cosas
-    // Todas las unidades están en metros
+    // Techo oscuro gigante
+    this.createRoof();
+
+    // Ejes
     this.axis = new THREE.AxesHelper(0.1);
     this.add(this.axis);
 
-
-    // Por último creamos el modelo.
-    // Le pasamos una variable de sincronizacion
+    // Laberinto
     var laberintoCargado = $.Deferred();
-    this.laberinto = new Laberinto("./mi_laberinto.txt", laberintoCargado);
+    this.laberinto = new Laberinto("./mi_laberinto2.txt", laberintoCargado);
     this.add(this.laberinto);
+
     laberintoCargado.done(() => {
-      console.log("Este bloque no se ejecuta hasta que se resuelve la variable de sincronización");
-      const pickUp = new THREE.Mesh(new THREE.SphereGeometry(0.5), new THREE.MeshNormalMaterial());
+      console.log("Laberinto cargado correctamente");
+
+      const pickUp = new THREE.Mesh(
+        new THREE.SphereGeometry(0.5),
+        new THREE.MeshNormalMaterial()
+      );
+
       this.add(pickUp);
       this.laberinto.getMundoFromCelda(4, 6, pickUp.position);
-      // El método solo ha puesto la posicion x, z. Nos queda la posición y
       pickUp.position.y = 1;
     });
+  }
 
-    this.reloj = new Reloj(1);
-    this.reloj.scale.set(0.2, 0.2, 0.2);
-    this.reloj.position.set(0, 0.5, 0);
-    this.add(this.reloj);
+  interaccionClick() {
+    const direccion = new THREE.Vector3();
+
+    this.camera.getWorldDirection(direccion);
+    direccion.normalize();
+
+    this.rayoInteraccion.set(this.camera.position, direccion);
+
+    // Si tienes Laberinto.objetos, usamos eso.
+    // Si no existe, usamos los hijos del laberinto.
+    const objetosInteractuables = Laberinto.objetos || this.laberinto.children;
+
+    const intersecciones = this.rayoInteraccion.intersectObjects(
+      objetosInteractuables,
+      true
+    );
+
+    if (intersecciones.length > 0) {
+      const objetoClicado = intersecciones[0].object;
+
+      console.log('Objeto clicado:', objetoClicado);
+
+      // Si el mesh tiene un root asignado, ocultamos el objeto completo
+      if (objetoClicado.userData.root) {
+        objetoClicado.userData.root.visible = false;
+      } else {
+        objetoClicado.visible = false;
+      }
+
+      // Si es un hueso, sumamos contador
+      if (objetoClicado.userData.type === "HUESO") {
+        this.guiControls.huesos += 1;
+        this.huesosController.updateDisplay();
+      }
+
+      // Ejemplo para otros pickups
+      if (objetoClicado.userData.type === "RELOJ") {
+        console.log("Has recogido un reloj");
+      }
+
+      if (objetoClicado.userData.type === "POCION") {
+        console.log("Has recogido una poción");
+      }
+
+      if (objetoClicado.userData.type === "LLAVE") {
+        console.log("Has recogido una llave");
+      }
+    }
   }
 
   createCamera() {
@@ -115,130 +156,190 @@ class MyScene extends THREE.Scene {
       75,
       window.innerWidth / window.innerHeight,
       0.1,
-      5
+      20
     );
 
-    // Posición inicial tipo FPSk
     this.camera.position.set(0, this.alturaJugador, 0);
 
-    // Control FPS con ratón
     this.cameraControl = new PointerLockControls(
       this.camera,
       this.renderer.domElement
     );
 
-    // Añadimos la cámara/control a la escena
     this.add(this.camera);
 
-    // Al hacer click en la pantalla, se bloquea el ratón
     this.renderer.domElement.addEventListener('click', () => {
       this.cameraControl.lock();
     });
   }
 
+  createFlashLight() {
+    // Linterna del jugador
+    this.flashLight = new THREE.SpotLight(
+      0xfff0cc,
+      80,
+      8,
+      Math.PI / 10,
+      0.45,
+      1.5
+    );
+
+    this.flashLight.position.set(0, 0, 0);
+    this.flashLight.castShadow = true;
+
+    this.flashLight.shadow.mapSize.width = 1024;
+    this.flashLight.shadow.mapSize.height = 1024;
+    this.flashLight.shadow.camera.near = 0.1;
+    this.flashLight.shadow.camera.far = 10;
+
+    // Target delante de la cámara
+    this.flashLight.target.position.set(0, 0, -1);
+
+    // La luz y su target van pegados a la cámara
+    this.camera.add(this.flashLight);
+    this.camera.add(this.flashLight.target);
+  }
+
   createGround() {
-    // 1. Cargador y Variable de Versión para evitar el caché
     const loader = new THREE.TextureLoader();
 
-    // 2. Carga de texturas del suelo
-    // Reemplaza estas rutas con tus archivos (ej. de la carpeta PavingSto o Madera)
     const baseColor = loader.load('texturas/Grass/GrassColor.jpg');
     const normalMap = loader.load('texturas/Grass/GrassNormal.png');
     const roughnessMap = loader.load('texturas/Grass/GrassRoughness.png');
     const aoMap = loader.load('texturas/Grass/GrassAO.jpg');
 
-    // 3. Configurar Repetición (Tiling)
-    // Como el suelo mide 78x48, repetimos la textura para que se vea bien
     [baseColor, normalMap, roughnessMap, aoMap].forEach((tex) => {
       tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      tex.repeat.set(10, 8); // Ajusta estos números a tu gusto
+      tex.repeat.set(10, 8);
     });
 
-    // 4. Geometría con canal UV2 para el AO
     const geometryGround = new THREE.BoxGeometry(78, 0.02, 48);
-    // IMPORTANTE: Esto evita que el material se vea negro al usar aoMap
-    geometryGround.setAttribute('uv2', new THREE.BufferAttribute(geometryGround.attributes.uv.array, 2));
 
-    // 5. Material Standard Profesional
+    geometryGround.setAttribute(
+      'uv2',
+      new THREE.BufferAttribute(geometryGround.attributes.uv.array, 2)
+    );
+
     const materialGround = new THREE.MeshStandardMaterial({
       map: baseColor,
       normalMap: normalMap,
       roughnessMap: roughnessMap,
       aoMap: aoMap,
       aoMapIntensity: 1.0,
-      metalness: 0.0, // La madera o piedra no suelen ser metálicas
+      metalness: 0.0,
       roughness: 1.0
     });
 
-    // 6. Construcción del Mesh
     const ground = new THREE.Mesh(geometryGround, materialGround);
     ground.position.y = -0.01;
 
-    // El suelo debe recibir sombras si usas SpotLight
     ground.receiveShadow = true;
+    ground.castShadow = false;
 
     this.add(ground);
   }
 
+  createRoof() {
+    // Bloque enorme superior que tapa la luz desde arriba
+    const roofGeometry = new THREE.BoxGeometry(78, 0.8, 48);
+
+    const roofMaterial = new THREE.MeshStandardMaterial({
+      color: 0x010101,
+      roughness: 1.0,
+      metalness: 0.0
+    });
+
+    this.roof = new THREE.Mesh(roofGeometry, roofMaterial);
+
+    // Altura del techo
+    this.roof.position.set(0, 2.45, 0);
+
+    this.roof.castShadow = true;
+    this.roof.receiveShadow = true;
+
+    this.add(this.roof);
+  }
+
   createGUI() {
-    // Se crea la interfaz gráfica de usuario
-    var gui = new GUI();
+    const gui = new GUI();
 
-    // La escena le va a añadir sus propios controles. 
-    // Se definen mediante un objeto de control
-    // En este caso la intensidad de la luz y si se muestran o no los ejes
     this.guiControls = {
-      // En el contexto de una función   this   alude a la función
-      lightPower: 500.0,  // La potencia de esta fuente de luz se mide en lúmenes
-      ambientIntensity: 0.5,
-      axisOnOff: true
-    }
+      lightPower: 20.0,
+      ambientIntensity: 0.04,
+      axisOnOff: true,
+      huesos: 0,
+      flashlightPower: 80,
+      fogDensity: 0.12
+    };
 
-    // Se crea una sección para los controles de esta clase
-    var folder = gui.addFolder('Luz y Ejes');
+    const folderInventario = gui.addFolder('Inventario');
 
-    // Se le añade un control para la potencia de la luz puntual
+    this.huesosController = folderInventario
+      .add(this.guiControls, 'huesos')
+      .name('Huesos recogidos')
+      .listen();
+
+    folderInventario.open();
+
+    const folderTerror = gui.addFolder('Ambiente Terror');
+
+    folderTerror
+      .add(this.guiControls, 'flashlightPower', 0, 200, 1)
+      .name('Potencia linterna')
+      .onChange((value) => {
+        if (this.flashLight) {
+          this.flashLight.intensity = value;
+        }
+      });
+
+    folderTerror
+      .add(this.guiControls, 'fogDensity', 0.01, 0.3, 0.01)
+      .name('Densidad niebla')
+      .onChange((value) => {
+        this.fog.density = value;
+      });
+
+    folderTerror.open();
+
+    const folder = gui.addFolder('Luz y Ejes');
+
     folder.add(this.guiControls, 'lightPower', 0, 1000, 20)
-      .name('Luz puntual : ')
+      .name('Luz superior')
       .onChange((value) => this.setLightPower(value));
 
-    // Otro para la intensidad de la luz ambiental
-    folder.add(this.guiControls, 'ambientIntensity', 0, 1, 0.05)
-      .name('Luz ambiental: ')
+    folder.add(this.guiControls, 'ambientIntensity', 0, 1, 0.01)
+      .name('Luz ambiental')
       .onChange((value) => this.setAmbientIntensity(value));
 
-    // Y otro para mostrar u ocultar los ejes
     folder.add(this.guiControls, 'axisOnOff')
-      .name('Mostrar ejes : ')
+      .name('Mostrar ejes')
       .onChange((value) => this.setAxisVisible(value));
 
     return gui;
   }
 
   createLights() {
-    // Se crea una luz ambiental, evita que se vean complentamente negras las zonas donde no incide de manera directa una fuente de luz
-    // La luz ambiental solo tiene un color y una intensidad
-    // Se declara como   var   y va a ser una variable local a este método
-    //    se hace así puesto que no va a ser accedida desde otros métodos
-    this.ambientLight = new THREE.AmbientLight('white', this.guiControls.ambientIntensity);
-    // La añadimos a la escena
+    // Luz ambiental muy baja
+    this.ambientLight = new THREE.AmbientLight(0x222233, this.guiControls.ambientIntensity);
     this.add(this.ambientLight);
 
-    // Se crea una luz focal que va a ser la luz principal de la escena
-    // La luz focal, además tiene una posición, y un punto de mira
-    // Si no se le da punto de mira, apuntará al (0,0,0) en coordenadas del mundo
-    // En este caso se declara como   this.atributo   para que sea un atributo accesible desde otros métodos.
-    this.pointLight = new THREE.SpotLight(0xffffff);
-    this.pointLight.power = this.guiControls.lightPower;
-    this.pointLight.position.set(2, 9, 1);
-    console.log(this.pointLight);
+    // Luz superior muy débil
+    this.pointLight = new THREE.SpotLight(0xffffff, this.guiControls.lightPower);
+    this.pointLight.position.set(0, 8, 0);
+    this.pointLight.angle = Math.PI / 5;
+    this.pointLight.penumbra = 0.8;
+    this.pointLight.decay = 2;
+    this.pointLight.distance = 12;
+
+    this.pointLight.castShadow = true;
+    this.pointLight.shadow.mapSize.width = 1024;
+    this.pointLight.shadow.mapSize.height = 1024;
+
     this.add(this.pointLight);
   }
 
-
-
   setLightPower(valor) {
-    this.pointLight.power = valor;
+    this.pointLight.intensity = valor;
   }
 
   setAmbientIntensity(valor) {
@@ -250,46 +351,34 @@ class MyScene extends THREE.Scene {
   }
 
   createRenderer(myCanvas) {
-    // Se recibe el lienzo sobre el que se van a hacer los renderizados. Un div definido en el html.
-
-    // Se instancia un Renderer   WebGL
-    var renderer = new THREE.WebGLRenderer({
+    const renderer = new THREE.WebGLRenderer({
       antialias: false,
       powerPreference: "high-performance"
     });
 
-    // Se establece un color de fondo en las imágenes que genera el render
-    renderer.setClearColor(new THREE.Color(0xEEEEEE), 1.0);
-
-    // Se establece el tamaño, se aprovecha la totalidad de la ventana del navegador
+    renderer.setClearColor(new THREE.Color(0x050505), 1.0);
     renderer.setSize(window.innerWidth, window.innerHeight);
 
-    // La visualización se muestra en el lienzo recibido
+    // Sombras
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
     $(myCanvas).append(renderer.domElement);
 
     return renderer;
   }
 
   getCamera() {
-    // En principio se devuelve la única cámara que tenemos
-    // Si hubiera varias cámaras, este método decidiría qué cámara devuelve cada vez que es consultado
     return this.camera;
   }
 
   setCameraAspect(ratio) {
-    // Cada vez que el usuario modifica el tamaño de la ventana desde el gestor de ventanas de
-    // su sistema operativo hay que actualizar el ratio de aspecto de la cámara
     this.camera.aspect = ratio;
-    // Y si se cambia ese dato hay que actualizar la matriz de proyección de la cámara
     this.camera.updateProjectionMatrix();
   }
 
   onWindowResize() {
-    // Este método es llamado cada vez que el usuario modifica el tamapo de la ventana de la aplicación
-    // Hay que actualizar el ratio de aspecto de la cámara
     this.setCameraAspect(window.innerWidth / window.innerHeight);
-
-    // Y también el tamaño del renderizador
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
@@ -297,47 +386,64 @@ class MyScene extends THREE.Scene {
     const delta = this.clock.getDelta();
     const velocidad_actual = this.velocidadMovimiento * delta;
 
+    const direccion = new THREE.Vector3();
+    this.camera.getWorldDirection(direccion);
+    direccion.y = 0;
+    direccion.normalize();
+
+    const derecha = new THREE.Vector3()
+      .crossVectors(direccion, new THREE.Vector3(0, 1, 0))
+      .normalize();
+
+    const izquierda = derecha.clone().negate();
+    const atras = direccion.clone().negate();
+
+    const comprobarColision = (dir) => {
+      this.rayoMovimiento.set(this.camera.position, dir);
+      const intersecciones = this.rayoMovimiento.intersectObjects(this.laberinto.children, true);
+      return intersecciones.length > 0;
+    };
+
     if (this.teclas.has('KeyW') || this.teclas.has('ArrowUp')) {
-      this.cameraControl.moveForward(velocidad_actual);
+      if (!comprobarColision(direccion)) {
+        this.cameraControl.moveForward(velocidad_actual);
+      }
     }
 
     if (this.teclas.has('KeyS') || this.teclas.has('ArrowDown')) {
-      this.cameraControl.moveForward(-velocidad_actual);
+      if (!comprobarColision(atras)) {
+        this.cameraControl.moveForward(-velocidad_actual);
+      }
     }
 
     if (this.teclas.has('KeyA') || this.teclas.has('ArrowLeft')) {
-      this.cameraControl.moveRight(-velocidad_actual);
+      if (!comprobarColision(izquierda)) {
+        this.cameraControl.moveRight(-velocidad_actual);
+      }
     }
 
     if (this.teclas.has('KeyD') || this.teclas.has('ArrowRight')) {
-      this.cameraControl.moveRight(velocidad_actual);
+      if (!comprobarColision(derecha)) {
+        this.cameraControl.moveRight(velocidad_actual);
+      }
     }
 
     this.camera.position.y = this.alturaJugador;
 
-    this.renderer.render(this, this.getCamera());
-
-    this.laberinto.update();
-
-    if (this.reloj) {
-      this.reloj.update();
+    if (this.laberinto) {
+      this.laberinto.update();
     }
+
+    this.renderer.render(this, this.getCamera());
 
     requestAnimationFrame(() => this.update());
   }
 }
 
-
-/// La función   main
 $(function () {
+  const scene = new MyScene("#WebGL-output");
 
-  // Se instancia la escena pasándole el  div  que se ha creado en el html para visualizar
-  var scene = new MyScene("#WebGL-output");
-
-  // Se añaden los listener de la aplicación. En este caso, el que va a comprobar cuándo se modifica el tamaño de la ventana de la aplicación.
   window.addEventListener("resize", () => scene.onWindowResize());
 
-  // Que no se nos olvide, la primera visualización.
   scene.update();
-
 });

@@ -22,6 +22,8 @@ class Hueso extends THREE.Object3D {
 
     var primer_resultado = evaluador.evaluate(superior,figura,CSG.ADDITION);
     var segundo_resultado = evaluador.evaluate(primer_resultado,inferior,CSG.ADDITION);
+    segundo_resultado.userData.root = this;
+    segundo_resultado.userData.type = "HUESO";
 
     this.add(segundo_resultado);
   }

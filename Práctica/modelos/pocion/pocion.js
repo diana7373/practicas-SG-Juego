@@ -99,6 +99,10 @@ class Pocion extends THREE.Object3D {
     tapon.translate(0, tamanio * 0.086, 0);
     var brushTapon = new CSG.Brush(tapon, material_tapon);
     resultado3 = evaluador.evaluate(resultado3, brushTapon, CSG.ADDITION);
+    resultado3.userData.root = this;
+    resultado3.userData.type = "POCION";
+    resultado4.userData.root = this;
+    resultado4.userData.type = "POCION";
 
     this.add(resultado3)
     this.add(resultado4)
