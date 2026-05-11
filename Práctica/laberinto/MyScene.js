@@ -1,6 +1,6 @@
-//GUI que los muestre los pickups que has cogido
+//GUI que los muestre los pickups que has cogido -> en html
 //Falta hacer una puerta y animarla cuando uses la lleve
-//Falta que cuando cojas la llave se te ponga en la mano
+//Falta que cuando cojas la llave se te ponga en la mano -> YA
 //Falta poner materiales y texturas a los pickups
 //hacer distintos tipos de paredes y suelos
 //Faltaria hacer una GUI con un contador y el tiempo del reloj y la funcionalidad del pickup
@@ -12,6 +12,7 @@ import { GUI } from 'gui'
 import { PointerLockControls } from '../libs/PointerLockControls.js'
 
 import { Laberinto } from './Laberinto.js'
+import { Llave } from '../modelos/llave/llave.js'
 import { Reloj } from '../modelos/reloj/reloj.js'
 import { FontLoader } from '../libs/FontLoader.js'
 import { TextGeometry } from '../libs/TextGeometry.js'
@@ -22,15 +23,17 @@ class MyScene extends THREE.Scene {
     super();
 
     // Fondo oscuro y niebla de terror
-    this.background = new THREE.Color(0x050505);
-    this.fog = new THREE.FogExp2(0x050505, 0.12);
+    //this.background = new THREE.Color(0x050505);
+    //this.fog = new THREE.FogExp2(0x050505, 0.12);
+    this.background = new THREE.Color(0x111111);
+    this.fog = new THREE.FogExp2(0x111111, 0.08);
 
     // Renderer
     this.renderer = this.createRenderer(myCanvas);
 
     // Jugador
     this.alturaJugador = 1.6;
-    this.velocidadMovimiento = 8.0;
+    this.velocidadMovimiento = 4.5;
     this.clock = new THREE.Clock();
     this.teclas = new Set();
 
@@ -59,6 +62,9 @@ class MyScene extends THREE.Scene {
 
     this.velocity = new THREE.Vector3();
     this.direction = new THREE.Vector3();
+
+    //para la llave en mano 
+    this.llaveEnMano = null;
 
     // GUI
     this.gui = this.createGUI();
@@ -121,6 +127,10 @@ class MyScene extends THREE.Scene {
     if (intersecciones.length > 0) {
       const objetoClicado = intersecciones[0].object;
 
+      if (objetoClicado.userData.recogido) return;
+
+      objetoClicado.userData.recogido = true;
+
       console.log('Objeto clicado:', objetoClicado);
 
       // Si el mesh tiene un root asignado, ocultamos el objeto completo
@@ -138,16 +148,54 @@ class MyScene extends THREE.Scene {
 
       // Ejemplo para otros pickups
       if (objetoClicado.userData.type === "RELOJ") {
+        this.guiControls.relojes += 1;
+        this.relojesController.updateDisplay();
         console.log("Has recogido un reloj");
       }
 
       if (objetoClicado.userData.type === "POCION") {
+        this.guiControls.pociones += 1;
+        this.pocionesController.updateDisplay();
         console.log("Has recogido una poción");
       }
 
       if (objetoClicado.userData.type === "LLAVE") {
-        console.log("Has recogido una llave");
-      }
+        this.guiControls.llaves += 1;
+        this.llavesController.updateDisplay();
+        
+        const root = objetoClicado.userData.root || objetoClicado;
+        
+        //Ocultamos la llave del suelo
+        root.visible = false; 
+
+        if (!this.llaveEnMano) {
+            // Creamos una instancia fresca de Llave
+            this.llaveEnMano = new Llave(1); 
+
+            //La hacemos hija de la cámara para que te siga
+            this.camera.add(this.llaveEnMano);
+
+            //Ajuste de posición: x (derecha/izquierda), y (arriba/abajo), z (profundidad)
+            // Nota: Al ser hija de la cámara, (0,0,0) es el centro de tu cara.
+            this.llaveEnMano.position.set(0.3, -0.1, -0.3);
+
+            //Ajuste de escala (ajústalo según el tamaño de tu modelo)
+            this.llaveEnMano.scale.set(0.5, 0.5, 0.5);
+
+            //Rotación inicial para que se vea bien
+            this.llaveEnMano.rotation.set(0, Math.PI, -Math.PI/2);
+
+            //Opcional: Desactivar sombras para evitar artefactos visuales raros tan cerca de la cámara
+            this.llaveEnMano.traverse((obj) => {
+                if (obj.isMesh) {
+                    obj.castShadow = false;
+                    obj.receiveShadow = false;
+                }
+            });
+
+            console.log("Nueva llave creada en la mano");
+        }
+    }
     }
   }
 
@@ -177,9 +225,9 @@ class MyScene extends THREE.Scene {
     // Linterna del jugador
     this.flashLight = new THREE.SpotLight(
       0xfff0cc,
-      80,
+      35,
       8,
-      Math.PI / 10,
+      Math.PI / 6,
       0.45,
       1.5
     );
@@ -203,10 +251,11 @@ class MyScene extends THREE.Scene {
   createGround() {
     const loader = new THREE.TextureLoader();
 
-    const baseColor = loader.load('texturas/Grass/GrassColor.jpg');
-    const normalMap = loader.load('texturas/Grass/GrassNormal.png');
-    const roughnessMap = loader.load('texturas/Grass/GrassRoughness.png');
-    const aoMap = loader.load('texturas/Grass/GrassAO.jpg');
+    const baseColor = loader.load('texturas/suelo/suelo_color.jpg');
+    const normalMap = loader.load('texturas/suelo/suelo_normal.png');
+    const roughnessMap = loader.load('texturas/suelo/suelo_r.png');
+    const aoMap = loader.load('texturas/suelo/suelo_ao.jpg');
+    const dispMap = loader.load('texturas/suelo/suelo_h.jpg');
 
     [baseColor, normalMap, roughnessMap, aoMap].forEach((tex) => {
       tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
@@ -227,7 +276,9 @@ class MyScene extends THREE.Scene {
       aoMap: aoMap,
       aoMapIntensity: 1.0,
       metalness: 0.0,
-      roughness: 1.0
+      roughness: 1.0,
+      displacementMap: dispMap, // Relieve real (mueve los vértices)
+      displacementScale: 0.05, // ¡OJO! Un valor pequeño (0.05 - 0.1) o el bloque explotará
     });
 
     const ground = new THREE.Mesh(geometryGround, materialGround);
@@ -252,7 +303,7 @@ class MyScene extends THREE.Scene {
     this.roof = new THREE.Mesh(roofGeometry, roofMaterial);
 
     // Altura del techo
-    this.roof.position.set(0, 2.45, 0);
+    this.roof.position.set(0, 4, 0);
 
     this.roof.castShadow = true;
     this.roof.receiveShadow = true;
@@ -265,10 +316,14 @@ class MyScene extends THREE.Scene {
 
     this.guiControls = {
       lightPower: 20.0,
-      ambientIntensity: 0.04,
+      //ambientIntensity: 0.04,
+      ambientIntensity: 0.12,
       axisOnOff: true,
       huesos: 0,
-      flashlightPower: 80,
+      llaves: 0,
+      relojes: 0,
+      pociones: 0,
+      flashlightPower: 35,
       fogDensity: 0.12
     };
 
@@ -277,6 +332,21 @@ class MyScene extends THREE.Scene {
     this.huesosController = folderInventario
       .add(this.guiControls, 'huesos')
       .name('Huesos recogidos')
+      .listen();
+      
+    this.llavesController = folderInventario
+      .add(this.guiControls, 'llaves')
+      .name('Llaves')
+      .listen();
+
+    this.relojesController = folderInventario
+      .add(this.guiControls, 'relojes')
+      .name('Relojes')
+      .listen();
+
+    this.pocionesController = folderInventario
+      .add(this.guiControls, 'pociones')
+      .name('Pociones')
       .listen();
 
     folderInventario.open();
@@ -320,7 +390,7 @@ class MyScene extends THREE.Scene {
 
   createLights() {
     // Luz ambiental muy baja
-    this.ambientLight = new THREE.AmbientLight(0x222233, this.guiControls.ambientIntensity);
+    this.ambientLight = new THREE.AmbientLight(0x888888, this.guiControls.ambientIntensity);
     this.add(this.ambientLight);
 
     // Luz superior muy débil

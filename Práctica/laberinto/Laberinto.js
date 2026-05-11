@@ -21,12 +21,11 @@ class Laberinto extends THREE.Object3D {
     const loaderTextura = new THREE.TextureLoader();
 
     // Cargamos las texturas (puedes añadir el truco del ?v=1 para el caché aquí también)
-    const baseColor = loaderTextura.load('texturas/PavingSto/PavingStonesColor.jpg');
-    const normalMap = loaderTextura.load('texturas/PavingSto/PavingStonesNormal.png');
-    const roughnessMap = loaderTextura.load('texturas/PavingSto/PavingStonesRoughness.png');
-    const aoMap = loaderTextura.load('texturas/PavingSto/PavingStonesAO.jpg');
-    const dispMap = loaderTextura.load('texturas/PavingSto/PavingStonesDisplacement.jpg');
-
+    const baseColor = loaderTextura.load('texturas/catacumba/catacumba_color.jpg');
+    const normalMap = loaderTextura.load('texturas/catacumba/catacumba_normal.jpg');
+    const roughnessMap = loaderTextura.load('texturas/catacumba/catacumba_r.jpg');
+    const aoMap = loaderTextura.load('texturas/catacumba/catacumba_ao.jpg');
+    const dispMap = loaderTextura.load('texturas/catacumba/catacumba_h.jpg');
     // Creamos el material profesional
     const bloqueMat = new THREE.MeshStandardMaterial({
       map: baseColor,
@@ -42,8 +41,8 @@ class Laberinto extends THREE.Object3D {
     super();
 
     // Medidas de un bloque
-    this.anchoBloque = 1.0;
-    this.altoBloque = 2.0;
+    this.anchoBloque = 3;
+    this.altoBloque = 3;
 
     // 3. Ajuste crucial en la Geometría
     // Para que el DisplacementMap funcione, la caja necesita muchos segmentos.
@@ -82,9 +81,23 @@ class Laberinto extends THREE.Object3D {
         for (let columna = 0; columna < this.xNumBloques; columna++) {
           switch (laberintoMatriz[fila][columna]) {
             case Laberinto.WALL:
-              unBloque = new THREE.Mesh(bloqueGeo, bloqueMat);
-              unBloque.position.set(columna * this.anchoBloque, 0, fila * this.anchoBloque);
-              this.add(unBloque);
+              // Creamos dos bloques, uno sobre otro
+  for (let i = 0; i < 2; i++) {
+    const unBloque = new THREE.Mesh(bloqueGeo, bloqueMat);
+
+    // Ajustamos la posición
+    unBloque.position.set(
+      columna * this.anchoBloque,
+      i * this.altoBloque, // El primero en 0, el segundo en 4.0
+      fila * this.anchoBloque
+    );
+
+    // Activamos sombras para que el laberinto se vea aterrador
+    unBloque.castShadow = true;
+    unBloque.receiveShadow = true;
+
+    this.add(unBloque);
+  }
               break;
             case Laberinto.RELOJ:
 
