@@ -3,30 +3,141 @@
 <html>
 
 <head>
-    <title>Ejemplo: Crear el laberinto desde un archivo</title>
+    <title>Mi Juego Laberinto</title>
     <meta charset="utf-8">
+
     <script type="text/javascript" src="../libs/jquery.js"></script>
-    
-    <!-- input type="file"  id="fileInput" -->
 
     <script type="importmap">
-          { "imports": { "three"       : "../libs/three.module.js" ,
-                         "gui"         : "../libs/dat.gui.module.js" ,
-                         "trackball"   : "../libs/TrackballControls.js" } }
+    { 
+        "imports": { 
+            "three"     : "../libs/three.module.js",
+            "gui"       : "../libs/dat.gui.module.js",
+            "trackball" : "../libs/TrackballControls.js" 
+        } 
+    }
     </script>
-    
-    <script type="module" src="./MyScene.js"></script>    
+
+    <script type="module" src="./MyScene.js"></script>
+
     <style>
-        body{
+        body {
             margin: 0;
-            overflow: hidden; 
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            background: black;
+        }
+
+        /* Aquí va Three.js */
+        #WebGL-output {
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Interfaz encima del juego */
+        #hud {
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+            color: white;
+            pointer-events: none;
+        }
+
+        /* Hueso arriba a la izquierda */
+        #contador-huesos {
+            position: fixed;
+            top: 10px;
+            left: 25px;
+
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        #contador-huesos img {
+            width: 100px;
+            height: 100px;
+            object-fit: contain;
+        }
+
+        #contador-huesos strong {
+            font-size: 90px;
+            line-height: 1;
+            color: white;
+            text-shadow: 0 0 10px black;
+        }
+
+        #pickup-llave,
+        #pickup-reloj,
+        #pickup-pocion {
+            display: none;
+        }
+        /* Barra inferior de pickups */
+        #barra-pickups {
+            position: fixed;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+
+            display: flex;
+            gap: 35px;
+
+            background: rgba(0, 0, 0, 0.45);
+            padding: 12px 25px;
+        }
+
+        /* Cada pickup */
+        .pickup {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pickup img {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+        }
+
+        .pickup strong {
+            font-size: 36px;
+            color: white;
+            text-shadow: 0 0 8px black;
         }
     </style>
 </head>
+
 <body>
 
-<!-- Div which will hold the Output -->
-<div id="WebGL-output">
-</div>
+    <div id="hud">
+
+        <!-- HUESOS ARRIBA IZQUIERDA -->
+        <div id="contador-huesos">
+            <img src="img/hueso.png" alt="Hueso">
+            <strong id="hud-huesos">0</strong>
+        </div>
+
+        <!-- PICKUPS ABAJO EN MEDIO -->
+        <div id="barra-pickups">
+
+            <div class="pickup" id="pickup-llave">
+                <img src="img/llave.png" alt="Llave">
+            </div>
+
+            <div class="pickup" id="pickup-reloj">
+                <img src="img/reloj.png" alt="Reloj">
+            </div>
+
+            <div class="pickup" id="pickup-pocion">
+                <img src="img/pocion.png" alt="Poción">
+            </div>
+
+        </div>
+
+    </div>
+
+    <div id="WebGL-output"></div>
+
 </body>
+
 </html>

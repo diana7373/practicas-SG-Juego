@@ -6,6 +6,10 @@
 //Faltaria hacer una GUI con un contador y el tiempo del reloj y la funcionalidad del pickup
 //Falta el arbol del pickup reloj
 //Falta un menu de pausa con opciones de reiniciar, salir, etc
+//La camara se mueva cuando andas
+//Items flotando mejor colocados y que giren sobre si mismos
+//Establecer bien el respawn
+//Animacion con la llave para abrir la puerta
 
 import * as THREE from 'three'
 import { GUI } from 'gui'
@@ -46,6 +50,11 @@ class MyScene extends THREE.Scene {
     window.addEventListener('keyup', (event) => {
       this.teclas.delete(event.code);
     });
+
+    this.cantidadHuesos = document.getElementById("hud-huesos"); 
+    this.llave = document.getElementById("pickup-llave");
+    this.pocion = document.getElementById("pickup-pocion");
+    this.reloj = document.getElementById("pickup-reloj");
 
     // Click izquierdo / interacción
     window.addEventListener('click', () => this.interaccionClick());
@@ -142,26 +151,23 @@ class MyScene extends THREE.Scene {
 
       // Si es un hueso, sumamos contador
       if (objetoClicado.userData.type === "HUESO") {
-        this.guiControls.huesos += 1;
-        this.huesosController.updateDisplay();
+
+        this.cantidadHuesos.value = this.cantidadHuesos.value + 1;
       }
 
       // Ejemplo para otros pickups
       if (objetoClicado.userData.type === "RELOJ") {
-        this.guiControls.relojes += 1;
-        this.relojesController.updateDisplay();
+        this.reloj.style.display = true;
         console.log("Has recogido un reloj");
       }
 
       if (objetoClicado.userData.type === "POCION") {
-        this.guiControls.pociones += 1;
-        this.pocionesController.updateDisplay();
+        this.pocion.style.display = true;
         console.log("Has recogido una poción");
       }
 
       if (objetoClicado.userData.type === "LLAVE") {
-        this.guiControls.llaves += 1;
-        this.llavesController.updateDisplay();
+        this.llave.style.display = true;
         
         const root = objetoClicado.userData.root || objetoClicado;
         
@@ -213,6 +219,8 @@ class MyScene extends THREE.Scene {
       this.camera,
       this.renderer.domElement
     );
+
+    //cambiar la posicion de la camara para el spawn
 
     this.add(this.camera);
 
@@ -319,37 +327,9 @@ class MyScene extends THREE.Scene {
       //ambientIntensity: 0.04,
       ambientIntensity: 0.12,
       axisOnOff: true,
-      huesos: 0,
-      llaves: 0,
-      relojes: 0,
-      pociones: 0,
       flashlightPower: 35,
       fogDensity: 0.12
     };
-
-    const folderInventario = gui.addFolder('Inventario');
-
-    this.huesosController = folderInventario
-      .add(this.guiControls, 'huesos')
-      .name('Huesos recogidos')
-      .listen();
-      
-    this.llavesController = folderInventario
-      .add(this.guiControls, 'llaves')
-      .name('Llaves')
-      .listen();
-
-    this.relojesController = folderInventario
-      .add(this.guiControls, 'relojes')
-      .name('Relojes')
-      .listen();
-
-    this.pocionesController = folderInventario
-      .add(this.guiControls, 'pociones')
-      .name('Pociones')
-      .listen();
-
-    folderInventario.open();
 
     const folderTerror = gui.addFolder('Ambiente Terror');
 

@@ -26,7 +26,7 @@ class Laberinto extends THREE.Object3D {
     const roughnessMap = loaderTextura.load('texturas/catacumba/catacumba_r.jpg');
     const aoMap = loaderTextura.load('texturas/catacumba/catacumba_ao.jpg');
     const dispMap = loaderTextura.load('texturas/catacumba/catacumba_h.jpg');
-    // Creamos el material profesional
+
     const bloqueMat = new THREE.MeshStandardMaterial({
       map: baseColor,
       normalMap: normalMap,
@@ -82,23 +82,24 @@ class Laberinto extends THREE.Object3D {
           switch (laberintoMatriz[fila][columna]) {
             case Laberinto.WALL:
               // Creamos dos bloques, uno sobre otro
-  for (let i = 0; i < 2; i++) {
-    const unBloque = new THREE.Mesh(bloqueGeo, bloqueMat);
+              for (let i = 0; i < 2; i++) {
+                const unBloque = new THREE.Mesh(bloqueGeo, bloqueMat);
 
-    // Ajustamos la posición
-    unBloque.position.set(
-      columna * this.anchoBloque,
-      i * this.altoBloque, // El primero en 0, el segundo en 4.0
-      fila * this.anchoBloque
-    );
+                // Ajustamos la posición
+                unBloque.position.set(
+                  columna * this.anchoBloque,
+                  i * this.altoBloque, // El primero en 0, el segundo en 4.0
+                  fila * this.anchoBloque
+                );
 
-    // Activamos sombras para que el laberinto se vea aterrador
-    unBloque.castShadow = true;
-    unBloque.receiveShadow = true;
+                // Activamos sombras para que el laberinto se vea aterrador
+                unBloque.castShadow = true;
+                unBloque.receiveShadow = true;
 
-    this.add(unBloque);
-  }
+                this.add(unBloque);
+              }
               break;
+              
             case Laberinto.RELOJ:
 
               this.reloj = new Reloj(1);
@@ -153,9 +154,9 @@ class Laberinto extends THREE.Object3D {
   }
 
   update() {
-      if (this.existeReloj) {
-        this.reloj.update();
-      }
+    if (this.existeReloj) {
+      this.reloj.update();
+    }
   }
 }
 
