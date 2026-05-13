@@ -2,18 +2,17 @@
 //Falta hacer una puerta y animarla cuando uses la lleve
 //Falta poner materiales y texturas a los pickups
 //hacer distintos tipos de paredes y suelos
-//Faltaria hacer una GUI con un contador y el tiempo del reloj y la funcionalidad del pickup
 //Falta el arbol del pickup reloj
 //Falta un menu de pausa con opciones de reiniciar, salir, etc
 //La camara se mueva cuando andas
 //Items flotando mejor colocados y que giren sobre si mismos
 //Establecer bien el respawn
 //Animacion con la llave para abrir la puerta
+//Meter Sprint cuando tengamos la pocion
 
 import * as THREE from 'three'
 import { GUI } from 'gui'
 import { PointerLockControls } from '../libs/PointerLockControls.js'
-
 import { Laberinto } from './Laberinto.js'
 import { Llave } from '../modelos/llave/llave.js'
 import { Reloj } from '../modelos/reloj/reloj.js'
