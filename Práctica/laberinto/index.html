@@ -72,6 +72,7 @@
         #pickup-pocion {
             display: none;
         }
+
         /* Barra inferior de pickups */
         #barra-pickups {
             position: fixed;
@@ -104,6 +105,92 @@
             color: white;
             text-shadow: 0 0 8px black;
         }
+
+        /* Temporizador abajo izquierda */
+        #temporizador {
+            position: fixed;
+            bottom: 25px;
+            left: 25px;
+
+            background: rgba(0, 0, 0, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 10px;
+
+            padding: 12px 20px;
+
+            color: white;
+            font-size: 34px;
+            font-weight: bold;
+            text-shadow: 0 0 8px black;
+
+            z-index: 20;
+        }
+
+        #temporizador.tiempo-agotado {
+            color: red;
+        }
+
+        /* Pantalla de partida acabada */
+        #pantalla-game-over {
+            position: fixed;
+            inset: 0;
+
+            display: none;
+            align-items: center;
+            justify-content: center;
+
+            background: rgba(0, 0, 0, 0.88);
+            z-index: 100;
+
+            pointer-events: auto;
+        }
+
+        #pantalla-game-over.visible {
+            display: flex;
+        }
+
+        #caja-game-over {
+            text-align: center;
+            color: white;
+
+            background: rgba(20, 20, 20, 0.95);
+            border: 2px solid red;
+            border-radius: 18px;
+
+            padding: 45px 60px;
+            box-shadow: 0 0 35px rgba(255, 0, 0, 0.55);
+        }
+
+        #caja-game-over h1 {
+            margin: 0 0 20px 0;
+            font-size: 52px;
+            color: red;
+            letter-spacing: 3px;
+            text-shadow: 0 0 12px black;
+        }
+
+        #caja-game-over p {
+            font-size: 24px;
+            margin-bottom: 35px;
+        }
+
+        #btn-reintentar {
+            padding: 15px 35px;
+
+            border: none;
+            border-radius: 10px;
+
+            background: red;
+            color: white;
+
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        #btn-reintentar:hover {
+            background: darkred;
+        }
     </style>
 </head>
 
@@ -116,6 +203,9 @@
             <img src="img/hueso.png" alt="Hueso">
             <strong id="hud-huesos">0</strong>
         </div>
+
+        <!-- TEMPORIZADOR ABAJO IZQUIERDA -->
+        <div id="temporizador">05:00</div>
 
         <!-- PICKUPS ABAJO EN MEDIO -->
         <div id="barra-pickups">
@@ -132,6 +222,15 @@
                 <img src="img/pocion.png" alt="Poción">
             </div>
 
+        </div>
+
+        <!-- PANTALLA DE PARTIDA ACABADA -->
+        <div id="pantalla-game-over">
+            <div id="caja-game-over">
+                <h1>PARTIDA ACABADA</h1>
+                <p>NO HAS LOGRADO SALIR DEL LABERINTO</p>
+                <button id="btn-reintentar">VOLVER A INTENTARLO</button>
+            </div>
         </div>
 
     </div>

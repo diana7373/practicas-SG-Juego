@@ -1,6 +1,5 @@
-//GUI que los muestre los pickups que has cogido -> en html
+
 //Falta hacer una puerta y animarla cuando uses la lleve
-//Falta que cuando cojas la llave se te ponga en la mano -> YA
 //Falta poner materiales y texturas a los pickups
 //hacer distintos tipos de paredes y suelos
 //Faltaria hacer una GUI con un contador y el tiempo del reloj y la funcionalidad del pickup
@@ -56,6 +55,24 @@ class MyScene extends THREE.Scene {
     this.pickupLlave = document.getElementById("pickup-llave");
     this.pickupPocion = document.getElementById("pickup-pocion");
     this.pickupReloj = document.getElementById("pickup-reloj");
+    this.pantallaGameOver = document.getElementById("pantalla-game-over");
+    this.btnReintentar = document.getElementById("btn-reintentar");
+    this.partidaAcabada = false;
+
+    if (this.btnReintentar) {
+      this.btnReintentar.addEventListener("click", () => {
+        window.location.reload();
+      });
+    }
+
+    this.hudTemporizador = document.getElementById("temporizador");
+    this.tiempoRestante = 5 * 60; // 5 minutos en segundos
+
+    this.actualizarTemporizador();
+
+    this.intervaloTemporizador = setInterval(() => {
+      this.actualizarTemporizador();
+    }, 1000);
 
     // Contadores reales en JavaScript
     this.contadorHuesos = 0;
@@ -120,7 +137,51 @@ class MyScene extends THREE.Scene {
     });
   }
 
+  actualizarTemporizador() {
+    if (!this.hudTemporizador) return;
+
+    const minutos = Math.floor(this.tiempoRestante / 60);
+    const segundos = this.tiempoRestante % 60;
+
+    const textoMinutos = String(minutos).padStart(2, "0");
+    const textoSegundos = String(segundos).padStart(2, "0");
+
+    this.hudTemporizador.textContent = `${textoMinutos}:${textoSegundos}`;
+
+    if (this.tiempoRestante <= 0) {
+      this.finalizarPartidaPorTiempo();
+      return;
+    }
+
+    this.tiempoRestante--;
+  }
+
+  finalizarPartidaPorTiempo() {
+    if (this.partidaAcabada) return;
+
+    this.partidaAcabada = true;
+
+    clearInterval(this.intervaloTemporizador);
+
+    if (this.hudTemporizador) {
+      this.hudTemporizador.classList.add("tiempo-agotado");
+    }
+
+    if (this.pantallaGameOver) {
+      this.pantallaGameOver.classList.add("visible");
+    }
+
+    this.teclas.clear();
+
+    if (this.cameraControl && this.cameraControl.isLocked) {
+      this.cameraControl.unlock();
+    }
+
+    console.log("Partida acabada por tiempo");
+  }
+
   interaccionClick() {
+    if (this.partidaAcabada) return;
     const direccion = new THREE.Vector3();
 
     this.camera.getWorldDirection(direccion);
@@ -216,7 +277,7 @@ class MyScene extends THREE.Scene {
       20
     );
 
-    this.camera.position.set(0, this.alturaJugador, 0);
+    this.camera.position.set(10, this.alturaJugador, 0);
 
     this.cameraControl = new PointerLockControls(
       this.camera,
@@ -329,9 +390,9 @@ class MyScene extends THREE.Scene {
       lightPower: 20.0,
       //ambientIntensity: 0.04,
       ambientIntensity: 0.12,
-      axisOnOff: true,
-      flashlightPower: 35,
-      fogDensity: 0.12
+      axisOnOff: false,
+      flashlightPower: 5,
+      fogDensity: 0.19
     };
 
     const folderTerror = gui.addFolder('Ambiente Terror');
@@ -437,6 +498,13 @@ class MyScene extends THREE.Scene {
 
   update() {
     const delta = this.clock.getDelta();
+
+    if (this.partidaAcabada) {
+      this.renderer.render(this, this.getCamera());
+      requestAnimationFrame(() => this.update());
+      return;
+    }
+
     const velocidad_actual = this.velocidadMovimiento * delta;
 
     const direccion = new THREE.Vector3();
