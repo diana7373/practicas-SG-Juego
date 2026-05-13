@@ -51,10 +51,14 @@ class MyScene extends THREE.Scene {
       this.teclas.delete(event.code);
     });
 
-    this.cantidadHuesos = document.getElementById("hud-huesos"); 
-    this.llave = document.getElementById("pickup-llave");
-    this.pocion = document.getElementById("pickup-pocion");
-    this.reloj = document.getElementById("pickup-reloj");
+    // Elementos HTML del HUD
+    this.hudHuesos = document.getElementById("hud-huesos");
+    this.pickupLlave = document.getElementById("pickup-llave");
+    this.pickupPocion = document.getElementById("pickup-pocion");
+    this.pickupReloj = document.getElementById("pickup-reloj");
+
+    // Contadores reales en JavaScript
+    this.contadorHuesos = 0;
 
     // Click izquierdo / interacción
     window.addEventListener('click', () => this.interaccionClick());
@@ -151,57 +155,56 @@ class MyScene extends THREE.Scene {
 
       // Si es un hueso, sumamos contador
       if (objetoClicado.userData.type === "HUESO") {
-
-        this.cantidadHuesos.value = this.cantidadHuesos.value + 1;
+        this.contadorHuesos++;
+        this.hudHuesos.textContent = this.contadorHuesos;
       }
 
-      // Ejemplo para otros pickups
       if (objetoClicado.userData.type === "RELOJ") {
-        this.reloj.style.display = true;
+        this.pickupReloj.style.display = "flex";
         console.log("Has recogido un reloj");
       }
 
       if (objetoClicado.userData.type === "POCION") {
-        this.pocion.style.display = true;
+        this.pickupPocion.style.display = "flex";
         console.log("Has recogido una poción");
       }
 
       if (objetoClicado.userData.type === "LLAVE") {
-        this.llave.style.display = true;
-        
+        this.pickupLlave.style.display = "flex";
+
         const root = objetoClicado.userData.root || objetoClicado;
-        
+
         //Ocultamos la llave del suelo
-        root.visible = false; 
+        root.visible = false;
 
         if (!this.llaveEnMano) {
-            // Creamos una instancia fresca de Llave
-            this.llaveEnMano = new Llave(1); 
+          // Creamos una instancia fresca de Llave
+          this.llaveEnMano = new Llave(1);
 
-            //La hacemos hija de la cámara para que te siga
-            this.camera.add(this.llaveEnMano);
+          //La hacemos hija de la cámara para que te siga
+          this.camera.add(this.llaveEnMano);
 
-            //Ajuste de posición: x (derecha/izquierda), y (arriba/abajo), z (profundidad)
-            // Nota: Al ser hija de la cámara, (0,0,0) es el centro de tu cara.
-            this.llaveEnMano.position.set(0.3, -0.1, -0.3);
+          //Ajuste de posición: x (derecha/izquierda), y (arriba/abajo), z (profundidad)
+          // Nota: Al ser hija de la cámara, (0,0,0) es el centro de tu cara.
+          this.llaveEnMano.position.set(0.3, -0.1, -0.3);
 
-            //Ajuste de escala (ajústalo según el tamaño de tu modelo)
-            this.llaveEnMano.scale.set(0.5, 0.5, 0.5);
+          //Ajuste de escala (ajústalo según el tamaño de tu modelo)
+          this.llaveEnMano.scale.set(0.5, 0.5, 0.5);
 
-            //Rotación inicial para que se vea bien
-            this.llaveEnMano.rotation.set(0, Math.PI, -Math.PI/2);
+          //Rotación inicial para que se vea bien
+          this.llaveEnMano.rotation.set(0, Math.PI, -Math.PI / 2);
 
-            //Opcional: Desactivar sombras para evitar artefactos visuales raros tan cerca de la cámara
-            this.llaveEnMano.traverse((obj) => {
-                if (obj.isMesh) {
-                    obj.castShadow = false;
-                    obj.receiveShadow = false;
-                }
-            });
+          //Opcional: Desactivar sombras para evitar artefactos visuales raros tan cerca de la cámara
+          this.llaveEnMano.traverse((obj) => {
+            if (obj.isMesh) {
+              obj.castShadow = false;
+              obj.receiveShadow = false;
+            }
+          });
 
-            console.log("Nueva llave creada en la mano");
+          console.log("Nueva llave creada en la mano");
         }
-    }
+      }
     }
   }
 
