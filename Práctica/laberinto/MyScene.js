@@ -1,6 +1,7 @@
-
+//añadir luces de colores distintas y cambiantes (por ejeplo como para donde esta la salida o donde esta la llave, que alguno sea cambiante)
+//añadir luces de distintos colores, como farolillos o luces anaranjadas tenebrosas, para dar ambiente al laberinto
 //Falta hacer una puerta y animarla cuando uses la lleve
-//Falta poner materiales y texturas a los pickups
+//Falta poner materiales y texturas a los pickups y colocarlos y mejorarlos
 //hacer distintos tipos de paredes y suelos
 //Falta el arbol del pickup reloj
 //Falta un menu de pausa con opciones de reiniciar, salir, etc
@@ -27,7 +28,7 @@ class MyScene extends THREE.Scene {
   constructor(myCanvas) {
     super();
     this.background = new THREE.Color(0x111111);
-    this.fog = new THREE.FogExp2(0x111111, 0.12);
+    this.fog = new THREE.FogExp2(0x111111, 0.19);
 
     // Renderer
     this.renderer = this.createRenderer(myCanvas);
@@ -107,7 +108,7 @@ class MyScene extends THREE.Scene {
     // Suelo
     this.createGround();
 
-    // Techo oscuro gigante
+    // Techo oscuro 
     this.createRoof();
 
     // Ejes
@@ -185,8 +186,6 @@ class MyScene extends THREE.Scene {
 
     this.rayoInteraccion.set(this.camera.position, direccion);
 
-    // Si tienes Laberinto.objetos, usamos eso.
-    // Si no existe, usamos los hijos del laberinto.
     const objetosInteractuables = Laberinto.objetos || this.laberinto.children;
 
     const intersecciones = this.rayoInteraccion.intersectObjects(objetosInteractuables,true);
@@ -288,7 +287,7 @@ class MyScene extends THREE.Scene {
     // Linterna del jugador
     this.flashLight = new THREE.SpotLight(
       0xfff0cc,
-      35,
+      15,
       8,
       Math.PI / 6,
       0.45,
@@ -381,7 +380,7 @@ class MyScene extends THREE.Scene {
       //ambientIntensity: 0.04,
       ambientIntensity: 0.12,
       axisOnOff: false,
-      flashlightPower: 5,
+      flashlightPower: 15,
       fogDensity: 0.19
     };
 
