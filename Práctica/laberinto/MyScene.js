@@ -9,6 +9,9 @@
 //Establecer bien el respawn
 //Animacion con la llave para abrir la puerta
 //Meter Sprint cuando tengamos la pocion
+//Aumentar el tiempo al pillar el reloj
+//Hacer colisiones a los pick ups
+//hacer que el raton se bloquee y desbloquee con una tecla y pillemos los pick ups con el raton desbloqueado
 
 import * as THREE from 'three'
 import { GUI } from 'gui'
@@ -23,12 +26,8 @@ class MyScene extends THREE.Scene {
 
   constructor(myCanvas) {
     super();
-
-    // Fondo oscuro y niebla de terror
-    //this.background = new THREE.Color(0x050505);
-    //this.fog = new THREE.FogExp2(0x050505, 0.12);
     this.background = new THREE.Color(0x111111);
-    this.fog = new THREE.FogExp2(0x111111, 0.08);
+    this.fog = new THREE.FogExp2(0x111111, 0.12);
 
     // Renderer
     this.renderer = this.createRenderer(myCanvas);
@@ -65,7 +64,7 @@ class MyScene extends THREE.Scene {
     }
 
     this.hudTemporizador = document.getElementById("temporizador");
-    this.tiempoRestante = 5 * 60; // 5 minutos en segundos
+    this.tiempoRestante = 5 * 60;
 
     this.actualizarTemporizador();
 
@@ -73,10 +72,8 @@ class MyScene extends THREE.Scene {
       this.actualizarTemporizador();
     }, 1000);
 
-    // Contadores reales en JavaScript
     this.contadorHuesos = 0;
 
-    // Click izquierdo / interacción
     window.addEventListener('click', () => this.interaccionClick());
 
     // Raycaster movimiento
@@ -192,10 +189,7 @@ class MyScene extends THREE.Scene {
     // Si no existe, usamos los hijos del laberinto.
     const objetosInteractuables = Laberinto.objetos || this.laberinto.children;
 
-    const intersecciones = this.rayoInteraccion.intersectObjects(
-      objetosInteractuables,
-      true
-    );
+    const intersecciones = this.rayoInteraccion.intersectObjects(objetosInteractuables,true);
 
     if (intersecciones.length > 0) {
       const objetoClicado = intersecciones[0].object;
@@ -283,8 +277,6 @@ class MyScene extends THREE.Scene {
       this.renderer.domElement
     );
 
-    //cambiar la posicion de la camara para el spawn
-
     this.add(this.camera);
 
     this.renderer.domElement.addEventListener('click', () => {
@@ -348,8 +340,8 @@ class MyScene extends THREE.Scene {
       aoMapIntensity: 1.0,
       metalness: 0.0,
       roughness: 1.0,
-      displacementMap: dispMap, // Relieve real (mueve los vértices)
-      displacementScale: 0.05, // ¡OJO! Un valor pequeño (0.05 - 0.1) o el bloque explotará
+      displacementMap: dispMap, 
+      displacementScale: 0.05, 
     });
 
     const ground = new THREE.Mesh(geometryGround, materialGround);
@@ -362,7 +354,6 @@ class MyScene extends THREE.Scene {
   }
 
   createRoof() {
-    // Bloque enorme superior que tapa la luz desde arriba
     const roofGeometry = new THREE.BoxGeometry(78, 0.8, 48);
 
     const roofMaterial = new THREE.MeshStandardMaterial({
