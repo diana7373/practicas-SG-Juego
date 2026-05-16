@@ -7,7 +7,6 @@
 //Falta un menu de pausa con opciones de reiniciar, salir, etc
 //La camara se mueva cuando andas
 //Items flotando mejor colocados y que giren sobre si mismos
-//Establecer bien el respawn
 //Animacion con la llave para abrir la puerta
 //Meter Sprint cuando tengamos la pocion
 //Aumentar el tiempo al pillar el reloj
