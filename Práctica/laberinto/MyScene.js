@@ -8,9 +8,8 @@
 
 //Items flotando mejor colocados y que giren sobre si mismos
 //Animacion con la llave para abrir la puerta
-//Meter Sprint cuando tengamos la pocion
 //Hacer colisiones a los pick ups
-
+//minimapa con la posición del jugador y la salida
 
 import * as THREE from 'three'
 import { GUI } from 'gui'
@@ -34,6 +33,18 @@ class MyScene extends THREE.Scene {
     // Jugador
     this.alturaJugador = 1.6;
     this.velocidadMovimiento = 4.5;
+    // Sprint desbloqueado con poción
+    this.velocidadSprint = 8.5;
+    this.tienePocion = false;
+
+    this.sprintMax = 100;
+    this.sprintActual = this.sprintMax;
+
+    this.sprintConsumoPorSegundo = 30;
+    this.sprintRecargaPorSegundo = 20;
+
+    this.sprintAgotado = false;
+    this.sprintando = false;
     this.clock = new THREE.Clock();
     this.teclas = new Set();
 
@@ -98,6 +109,9 @@ class MyScene extends THREE.Scene {
     this.pickupReloj = document.getElementById("pickup-reloj");
     this.pantallaGameOver = document.getElementById("pantalla-game-over");
     this.btnReintentar = document.getElementById("btn-reintentar");
+    // Barra de sprint
+    this.crearBarraSprint();
+    this.actualizarBarraSprint();
 
     // Elementos HTML del menú de pausa
     this.pantallaPausa = document.getElementById("pantalla-pausa");
@@ -301,8 +315,22 @@ class MyScene extends THREE.Scene {
       }
 
       if (objetoClicado.userData.type === "POCION") {
-        this.pickupPocion.style.display = "flex";
-        console.log("Has recogido una poción");
+        if (this.pickupPocion) {
+          this.pickupPocion.style.display = "flex";
+        }
+
+        this.tienePocion = true;
+        this.sprintActual = this.sprintMax;
+        this.sprintAgotado = false;
+        this.sprintando = false;
+
+        if (this.contenedorSprint) {
+          this.contenedorSprint.style.display = "block";
+        }
+
+        this.actualizarBarraSprint();
+
+        console.log("Has recogido una poción. Sprint desbloqueado");
       }
 
       if (objetoClicado.userData.type === "LLAVE") {
@@ -646,6 +674,150 @@ class MyScene extends THREE.Scene {
     }
   }
 
+  crearBarraSprint() {
+    let contenedor = document.getElementById("barra-sprint");
+
+    if (!document.getElementById("estilos-sprint")) {
+      const style = document.createElement("style");
+      style.id = "estilos-sprint";
+
+      style.textContent = `
+      #barra-sprint {
+        position: fixed;
+        left: 50%;
+        bottom: 115px;
+        transform: translateX(-50%);
+        width: 360px;
+        padding: 10px 14px;
+        background: rgba(0, 0, 0, 0.65);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        border-radius: 12px;
+        z-index: 30;
+        display: none;
+        box-sizing: border-box;
+      }
+
+      #texto-sprint {
+        color: white;
+        font-size: 14px;
+        font-weight: bold;
+        letter-spacing: 2px;
+        margin-bottom: 6px;
+        text-align: center;
+        text-shadow: 0 0 6px black;
+      }
+
+      #fondo-sprint {
+        width: 100%;
+        height: 18px;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 999px;
+        overflow: hidden;
+      }
+
+      #relleno-sprint {
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, #35d0ff, #ffffff);
+        border-radius: 999px;
+        transition: width 0.08s linear;
+      }
+    `;
+
+      document.head.appendChild(style);
+    }
+
+    if (!contenedor) {
+      contenedor = document.createElement("div");
+      contenedor.id = "barra-sprint";
+
+      contenedor.innerHTML = `
+      <div id="texto-sprint">SPRINT</div>
+      <div id="fondo-sprint">
+        <div id="relleno-sprint"></div>
+      </div>
+    `;
+
+      const hud = document.getElementById("hud") || document.body;
+      hud.appendChild(contenedor);
+    }
+
+    this.contenedorSprint = contenedor;
+    this.barraSprint = document.getElementById("relleno-sprint");
+    this.textoSprint = document.getElementById("texto-sprint");
+  }
+
+  actualizarBarraSprint() {
+    if (!this.barraSprint) return;
+
+    const porcentaje = Math.max(0, Math.min(100, this.sprintActual));
+    this.barraSprint.style.width = `${porcentaje}%`;
+
+    if (this.textoSprint) {
+      if (this.sprintAgotado) {
+        this.textoSprint.textContent = "SPRINT RECARGANDO";
+      } else {
+        this.textoSprint.textContent = "SPRINT";
+      }
+    }
+  }
+
+  estaPulsandoMovimiento() {
+    return (
+      this.teclas.has("KeyW") ||
+      this.teclas.has("ArrowUp") ||
+      this.teclas.has("KeyS") ||
+      this.teclas.has("ArrowDown") ||
+      this.teclas.has("KeyA") ||
+      this.teclas.has("ArrowLeft") ||
+      this.teclas.has("KeyD") ||
+      this.teclas.has("ArrowRight")
+    );
+  }
+
+  estaPulsandoShift() {
+    return (
+      this.teclas.has("ShiftLeft") ||
+      this.teclas.has("ShiftRight")
+    );
+  }
+
+  actualizarSprint(delta) {
+    if (!this.tienePocion) {
+      return false;
+    }
+
+    const pulsaMovimiento = this.estaPulsandoMovimiento();
+    const pulsaShift = this.estaPulsandoShift();
+
+    const puedeSprintar = !this.sprintAgotado && this.sprintActual > 0;
+
+    this.sprintando = pulsaShift && pulsaMovimiento && puedeSprintar;
+
+    if (this.sprintando) {
+      this.sprintActual -= this.sprintConsumoPorSegundo * delta;
+
+      if (this.sprintActual <= 0) {
+        this.sprintActual = 0;
+        this.sprintAgotado = true;
+        this.sprintando = false;
+      }
+    } else {
+      if (this.sprintActual < this.sprintMax) {
+        this.sprintActual += this.sprintRecargaPorSegundo * delta;
+
+        if (this.sprintActual >= this.sprintMax) {
+          this.sprintActual = this.sprintMax;
+          this.sprintAgotado = false;
+        }
+      }
+    }
+
+    this.actualizarBarraSprint();
+
+    return this.sprintando;
+  }
+
   update() {
     const delta = this.clock.getDelta();
 
@@ -656,7 +828,9 @@ class MyScene extends THREE.Scene {
       return;
     }
 
-    const velocidad_actual = this.velocidadMovimiento * delta;
+    const estaSprintando = this.actualizarSprint(delta);
+
+    const velocidad_actual = (estaSprintando ? this.velocidadSprint : this.velocidadMovimiento) * delta;
 
     const direccion = new THREE.Vector3();
     this.camera.getWorldDirection(direccion);
