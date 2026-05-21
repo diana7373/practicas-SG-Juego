@@ -191,6 +191,86 @@
         #btn-reintentar:hover {
             background: darkred;
         }
+
+        /* Pantalla de pausa */
+        #pantalla-pausa {
+            position: fixed;
+            inset: 0;
+
+            display: none;
+            align-items: center;
+            justify-content: center;
+
+            background: rgba(0, 0, 0, 0.78);
+            z-index: 120;
+
+            pointer-events: auto;
+        }
+
+        #pantalla-pausa.visible {
+            display: flex;
+        }
+
+        #caja-pausa {
+            text-align: center;
+            color: white;
+
+            background: rgba(20, 20, 20, 0.96);
+            border: 2px solid white;
+            border-radius: 18px;
+
+            padding: 45px 60px;
+            box-shadow: 0 0 35px rgba(255, 255, 255, 0.35);
+        }
+
+        #caja-pausa h1 {
+            margin: 0 0 20px 0;
+            font-size: 52px;
+            color: white;
+            letter-spacing: 3px;
+            text-shadow: 0 0 12px black;
+        }
+
+        #caja-pausa p {
+            font-size: 22px;
+            margin-bottom: 35px;
+        }
+
+        .botones-pausa {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        #btn-reiniciar-pausa,
+        #btn-salir-pausa {
+            padding: 15px 35px;
+
+            border: none;
+            border-radius: 10px;
+
+            color: white;
+
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        #btn-reiniciar-pausa {
+            background: red;
+        }
+
+        #btn-reiniciar-pausa:hover {
+            background: darkred;
+        }
+
+        #btn-salir-pausa {
+            background: #333333;
+        }
+
+        #btn-salir-pausa:hover {
+            background: #555555;
+        }
     </style>
 </head>
 
@@ -232,6 +312,20 @@
                 <button id="btn-reintentar">VOLVER A INTENTARLO</button>
             </div>
         </div>
+
+        <!-- PANTALLA DE PAUSA -->
+        <div id="pantalla-pausa">
+            <div id="caja-pausa">
+                <h1>PAUSA</h1>
+                <p>Pulsa ESC para volver a la partida</p>
+
+                <div class="botones-pausa">
+                    <button id="btn-reiniciar-pausa">REINICIAR</button>
+                    <button id="btn-salir-pausa">SALIR</button>
+                </div>
+            </div>
+        </div>
+
 
     </div>
 

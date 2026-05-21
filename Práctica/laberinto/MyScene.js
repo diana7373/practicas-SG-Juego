@@ -4,14 +4,13 @@
 //Falta poner materiales y texturas a los pickups y colocarlos y mejorarlos
 //hacer distintos tipos de paredes y suelos
 //Falta el arbol del pickup reloj
-//Falta un menu de pausa con opciones de reiniciar, salir, etc
 //La camara se mueva cuando andas
+
 //Items flotando mejor colocados y que giren sobre si mismos
 //Animacion con la llave para abrir la puerta
 //Meter Sprint cuando tengamos la pocion
-//Aumentar el tiempo al pillar el reloj
 //Hacer colisiones a los pick ups
-//hacer que el raton se bloquee y desbloquee con una tecla y pillemos los pick ups con el raton desbloqueado
+
 
 import * as THREE from 'three'
 import { GUI } from 'gui'
@@ -38,8 +37,52 @@ class MyScene extends THREE.Scene {
     this.clock = new THREE.Clock();
     this.teclas = new Set();
 
+    // Estados del juego
+    this.partidaAcabada = false;
+    this.juegoPausado = false;
+
+    // Estado del ratón
+    this.ratonLiberadoPorControl = false;
+
+    // Posición del ratón en coordenadas normalizadas para el raycaster
+    this.mouse = new THREE.Vector2(0, 0);
+
+    window.addEventListener('mousemove', (event) => {
+      const rect = this.renderer.domElement.getBoundingClientRect();
+
+      this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    });
+
     // Teclado
     window.addEventListener('keydown', (event) => {
+
+      // Evita que al mantener pulsado ESC o CONTROL se repita mil veces
+      if (event.repeat && (
+        event.code === 'Escape' ||
+        event.code === 'ControlLeft' ||
+        event.code === 'ControlRight'
+      )) {
+        return;
+      }
+
+      // ESC abre o cierra el menú de pausa
+      if (event.code === 'Escape') {
+        event.preventDefault();
+        this.cambiarPausa();
+        return;
+      }
+
+      // CONTROL bloquea o desbloquea el ratón
+      if (event.code === 'ControlLeft' || event.code === 'ControlRight') {
+        event.preventDefault();
+        this.cambiarBloqueoRaton();
+        return;
+      }
+
+      // Si la partida está acabada o pausada, no dejamos mover al jugador
+      if (this.partidaAcabada || this.juegoPausado) return;
+
       this.teclas.add(event.code);
       console.log('Tecla pulsada:', event.code);
     });
@@ -55,11 +98,30 @@ class MyScene extends THREE.Scene {
     this.pickupReloj = document.getElementById("pickup-reloj");
     this.pantallaGameOver = document.getElementById("pantalla-game-over");
     this.btnReintentar = document.getElementById("btn-reintentar");
-    this.partidaAcabada = false;
 
+    // Elementos HTML del menú de pausa
+    this.pantallaPausa = document.getElementById("pantalla-pausa");
+    this.btnReiniciarPausa = document.getElementById("btn-reiniciar-pausa");
+    this.btnSalirPausa = document.getElementById("btn-salir-pausa");
+
+    // Botón de reintentar cuando acaba la partida
     if (this.btnReintentar) {
       this.btnReintentar.addEventListener("click", () => {
         window.location.reload();
+      });
+    }
+
+    // Botón reiniciar del menú de pausa
+    if (this.btnReiniciarPausa) {
+      this.btnReiniciarPausa.addEventListener("click", () => {
+        window.location.reload();
+      });
+    }
+
+    // Botón salir del menú de pausa
+    if (this.btnSalirPausa) {
+      this.btnSalirPausa.addEventListener("click", () => {
+        window.location.href = "../index.html";
       });
     }
 
@@ -89,7 +151,7 @@ class MyScene extends THREE.Scene {
     this.velocity = new THREE.Vector3();
     this.direction = new THREE.Vector3();
 
-    //para la llave en mano 
+    // Para la llave en mano
     this.llaveEnMano = null;
 
     // GUI
@@ -107,7 +169,7 @@ class MyScene extends THREE.Scene {
     // Suelo
     this.createGround();
 
-    // Techo oscuro 
+    // Techo oscuro
     this.createRoof();
 
     // Ejes
@@ -133,7 +195,7 @@ class MyScene extends THREE.Scene {
     });
   }
 
-  actualizarTemporizador() {
+  pintarTemporizador() {
     if (!this.hudTemporizador) return;
 
     const minutos = Math.floor(this.tiempoRestante / 60);
@@ -143,6 +205,24 @@ class MyScene extends THREE.Scene {
     const textoSegundos = String(segundos).padStart(2, "0");
 
     this.hudTemporizador.textContent = `${textoMinutos}:${textoSegundos}`;
+  }
+
+  sumarTiempo(segundosExtra) {
+    if (this.partidaAcabada) return;
+
+    this.tiempoRestante += segundosExtra;
+    this.pintarTemporizador();
+
+    console.log(`Tiempo añadido: +${segundosExtra} segundos`);
+  }
+
+  actualizarTemporizador() {
+    if (!this.hudTemporizador) return;
+
+    // Si está pausado o acabada la partida, el tiempo no baja
+    if (this.partidaAcabada || this.juegoPausado) return;
+
+    this.pintarTemporizador();
 
     if (this.tiempoRestante <= 0) {
       this.finalizarPartidaPorTiempo();
@@ -177,17 +257,19 @@ class MyScene extends THREE.Scene {
   }
 
   interaccionClick() {
-    if (this.partidaAcabada) return;
-    const direccion = new THREE.Vector3();
+    if (this.partidaAcabada || this.juegoPausado) return;
 
-    this.camera.getWorldDirection(direccion);
-    direccion.normalize();
+    // Solo se puede interactuar si el ratón está liberado
+    if (this.cameraControl && this.cameraControl.isLocked) {
+      return;
+    }
 
-    this.rayoInteraccion.set(this.camera.position, direccion);
+    // El rayo sale desde la posición del ratón en pantalla
+    this.rayoInteraccion.setFromCamera(this.mouse, this.camera);
 
     const objetosInteractuables = Laberinto.objetos || this.laberinto.children;
 
-    const intersecciones = this.rayoInteraccion.intersectObjects(objetosInteractuables,true);
+    const intersecciones = this.rayoInteraccion.intersectObjects(objetosInteractuables, true);
 
     if (intersecciones.length > 0) {
       const objetoClicado = intersecciones[0].object;
@@ -198,14 +280,12 @@ class MyScene extends THREE.Scene {
 
       console.log('Objeto clicado:', objetoClicado);
 
-      // Si el mesh tiene un root asignado, ocultamos el objeto completo
       if (objetoClicado.userData.root) {
         objetoClicado.userData.root.visible = false;
       } else {
         objetoClicado.visible = false;
       }
 
-      // Si es un hueso, sumamos contador
       if (objetoClicado.userData.type === "HUESO") {
         this.contadorHuesos++;
         this.hudHuesos.textContent = this.contadorHuesos;
@@ -213,7 +293,11 @@ class MyScene extends THREE.Scene {
 
       if (objetoClicado.userData.type === "RELOJ") {
         this.pickupReloj.style.display = "flex";
-        console.log("Has recogido un reloj");
+
+        // Al recoger el reloj, suma 1 minuto al temporizador
+        this.sumarTiempo(60);
+
+        console.log("Has recogido un reloj: +1 minuto");
       }
 
       if (objetoClicado.userData.type === "POCION") {
@@ -226,27 +310,17 @@ class MyScene extends THREE.Scene {
 
         const root = objetoClicado.userData.root || objetoClicado;
 
-        //Ocultamos la llave del suelo
         root.visible = false;
 
         if (!this.llaveEnMano) {
-          // Creamos una instancia fresca de Llave
           this.llaveEnMano = new Llave(1);
 
-          //La hacemos hija de la cámara para que te siga
           this.camera.add(this.llaveEnMano);
 
-          //Ajuste de posición: x (derecha/izquierda), y (arriba/abajo), z (profundidad)
-          // Nota: Al ser hija de la cámara, (0,0,0) es el centro de tu cara.
           this.llaveEnMano.position.set(0.3, -0.1, -0.3);
-
-          //Ajuste de escala (ajústalo según el tamaño de tu modelo)
           this.llaveEnMano.scale.set(0.5, 0.5, 0.5);
-
-          //Rotación inicial para que se vea bien
           this.llaveEnMano.rotation.set(0, Math.PI, -Math.PI / 2);
 
-          //Opcional: Desactivar sombras para evitar artefactos visuales raros tan cerca de la cámara
           this.llaveEnMano.traverse((obj) => {
             if (obj.isMesh) {
               obj.castShadow = false;
@@ -277,13 +351,35 @@ class MyScene extends THREE.Scene {
 
     this.add(this.camera);
 
+    // Si el navegador desbloquea el ratón con ESC, abrimos pausa.
+    // Pero si lo desbloqueamos con CONTROL, NO abrimos pausa.
+    this.cameraControl.addEventListener('unlock', () => {
+      if (
+        !this.partidaAcabada &&
+        !this.juegoPausado &&
+        !this.ratonLiberadoPorControl
+      ) {
+        this.abrirPausa();
+      }
+    });
+
+    // Click inicial para empezar a jugar.
+    // Si el ratón está liberado por CONTROL, no se vuelve a bloquear con click,
+    // porque ese click se usa para interactuar con objetos.
     this.renderer.domElement.addEventListener('click', () => {
-      this.cameraControl.lock();
+      if (
+        !this.partidaAcabada &&
+        !this.juegoPausado &&
+        !this.ratonLiberadoPorControl &&
+        this.cameraControl &&
+        !this.cameraControl.isLocked
+      ) {
+        this.cameraControl.lock();
+      }
     });
   }
 
   createFlashLight() {
-    // Linterna del jugador
     this.flashLight = new THREE.SpotLight(
       0xfff0cc,
       15,
@@ -301,10 +397,8 @@ class MyScene extends THREE.Scene {
     this.flashLight.shadow.camera.near = 0.1;
     this.flashLight.shadow.camera.far = 10;
 
-    // Target delante de la cámara
     this.flashLight.target.position.set(0, 0, -1);
 
-    // La luz y su target van pegados a la cámara
     this.camera.add(this.flashLight);
     this.camera.add(this.flashLight.target);
   }
@@ -338,8 +432,8 @@ class MyScene extends THREE.Scene {
       aoMapIntensity: 1.0,
       metalness: 0.0,
       roughness: 1.0,
-      displacementMap: dispMap, 
-      displacementScale: 0.05, 
+      displacementMap: dispMap,
+      displacementScale: 0.05,
     });
 
     const ground = new THREE.Mesh(geometryGround, materialGround);
@@ -362,7 +456,6 @@ class MyScene extends THREE.Scene {
 
     this.roof = new THREE.Mesh(roofGeometry, roofMaterial);
 
-    // Altura del techo
     this.roof.position.set(0, 4, 0);
 
     this.roof.castShadow = true;
@@ -376,7 +469,6 @@ class MyScene extends THREE.Scene {
 
     this.guiControls = {
       lightPower: 20.0,
-      //ambientIntensity: 0.04,
       ambientIntensity: 0.12,
       axisOnOff: false,
       flashlightPower: 15,
@@ -421,11 +513,9 @@ class MyScene extends THREE.Scene {
   }
 
   createLights() {
-    // Luz ambiental muy baja
     this.ambientLight = new THREE.AmbientLight(0x888888, this.guiControls.ambientIntensity);
     this.add(this.ambientLight);
 
-    // Luz superior muy débil
     this.pointLight = new THREE.SpotLight(0xffffff, this.guiControls.lightPower);
     this.pointLight.position.set(0, 8, 0);
     this.pointLight.angle = Math.PI / 5;
@@ -461,7 +551,6 @@ class MyScene extends THREE.Scene {
     renderer.setClearColor(new THREE.Color(0x050505), 1.0);
     renderer.setSize(window.innerWidth, window.innerHeight);
 
-    // Sombras
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -484,10 +573,84 @@ class MyScene extends THREE.Scene {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
+  cambiarBloqueoRaton() {
+    if (this.partidaAcabada || this.juegoPausado) return;
+    if (!this.cameraControl) return;
+
+    this.teclas.clear();
+
+    if (this.cameraControl.isLocked) {
+      // Si está bloqueado, CONTROL libera el ratón
+      this.ratonLiberadoPorControl = true;
+      this.cameraControl.unlock();
+      console.log("Ratón liberado con CONTROL");
+    } else {
+      // Si está liberado, CONTROL vuelve a bloquearlo
+      this.ratonLiberadoPorControl = false;
+      this.cameraControl.lock();
+
+      // Evita saltos de movimiento al volver a bloquear
+      this.clock.getDelta();
+
+      console.log("Ratón bloqueado con CONTROL");
+    }
+  }
+
+  abrirPausa() {
+    if (this.partidaAcabada || this.juegoPausado) return;
+
+    this.juegoPausado = true;
+    this.ratonLiberadoPorControl = false;
+    this.teclas.clear();
+
+    if (this.pantallaPausa) {
+      this.pantallaPausa.classList.add("visible");
+    }
+
+    if (this.cameraControl && this.cameraControl.isLocked) {
+      this.cameraControl.unlock();
+    }
+
+    console.log("Juego pausado");
+  }
+
+  cerrarPausa() {
+    if (this.partidaAcabada || !this.juegoPausado) return;
+
+    this.juegoPausado = false;
+    this.ratonLiberadoPorControl = false;
+    this.teclas.clear();
+
+    if (this.pantallaPausa) {
+      this.pantallaPausa.classList.remove("visible");
+    }
+
+    // Intenta volver a bloquear el ratón al salir de pausa
+    if (this.cameraControl && !this.cameraControl.isLocked) {
+      this.cameraControl.lock();
+    }
+
+    // Evita saltos de movimiento al volver de pausa
+    this.clock.getDelta();
+
+    console.log("Juego reanudado");
+  }
+
+  cambiarPausa() {
+    if (this.partidaAcabada) return;
+
+    if (this.juegoPausado) {
+      this.cerrarPausa();
+    } else {
+      this.abrirPausa();
+    }
+  }
+
   update() {
     const delta = this.clock.getDelta();
 
-    if (this.partidaAcabada) {
+    // Si está pausado o acabada la partida, solo renderiza, pero no mueve nada
+    if (this.partidaAcabada || this.juegoPausado) {
       this.renderer.render(this, this.getCamera());
       requestAnimationFrame(() => this.update());
       return;
