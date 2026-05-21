@@ -13,7 +13,6 @@
 //Items flotando mejor colocados y que giren sobre si mismos
 //Animacion con la llave para abrir la puerta
 //Hacer colisiones a los pick ups
-//minimapa con la posición del jugador y la salida
 
 import * as THREE from 'three'
 import { GUI } from 'gui'
@@ -175,6 +174,9 @@ class MyScene extends THREE.Scene {
     // GUI
     this.gui = this.createGUI();
 
+    // Minimapa
+    this.crearMinimapa();
+
     // Luces
     this.createLights();
 
@@ -210,6 +212,9 @@ class MyScene extends THREE.Scene {
       this.add(pickUp);
       this.laberinto.getMundoFromCelda(4, 6, pickUp.position);
       pickUp.position.y = 1;
+
+      // Preparamos el minimapa cuando el laberinto ya existe
+      this.prepararMinimapaLaberinto();
     });
   }
 
@@ -541,6 +546,11 @@ class MyScene extends THREE.Scene {
       .name('Mostrar ejes')
       .onChange((value) => this.setAxisVisible(value));
 
+    // La GUI se crea, pero no se muestra en pantalla
+    if (gui.domElement) {
+      gui.domElement.style.display = "none";
+    }
+
     return gui;
   }
 
@@ -822,6 +832,170 @@ class MyScene extends THREE.Scene {
     return this.sprintando;
   }
 
+  crearMinimapa() {
+    this.minimapaSize = 190;
+    this.minimapaPadding = 12;
+
+    this.minimapaCanvas = document.createElement("canvas");
+    this.minimapaCanvas.width = this.minimapaSize;
+    this.minimapaCanvas.height = this.minimapaSize;
+
+    this.minimapaCanvas.style.position = "fixed";
+    this.minimapaCanvas.style.top = "20px";
+    this.minimapaCanvas.style.right = "20px";
+    this.minimapaCanvas.style.width = this.minimapaSize + "px";
+    this.minimapaCanvas.style.height = this.minimapaSize + "px";
+    this.minimapaCanvas.style.zIndex = "50";
+    this.minimapaCanvas.style.border = "2px solid rgba(255,255,255,0.8)";
+    this.minimapaCanvas.style.borderRadius = "10px";
+    this.minimapaCanvas.style.background = "rgba(0,0,0,0.65)";
+    this.minimapaCanvas.style.pointerEvents = "none";
+
+    document.body.appendChild(this.minimapaCanvas);
+
+    this.minimapaCtx = this.minimapaCanvas.getContext("2d");
+    this.minimapaPreparado = false;
+    this.minimapaParedes = [];
+  }
+
+  prepararMinimapaLaberinto() {
+    if (!this.laberinto || !this.minimapaCtx) return;
+
+    this.minimapaParedes = [];
+
+    const bounds = new THREE.Box3().setFromObject(this.laberinto);
+
+    if (
+      !isFinite(bounds.min.x) || !isFinite(bounds.max.x) ||
+      !isFinite(bounds.min.z) || !isFinite(bounds.max.z)
+    ) {
+      console.warn("No se ha podido calcular el tamaño del laberinto para el minimapa");
+      return;
+    }
+
+    this.minimapaBounds = bounds;
+
+    const anchoMundo = bounds.max.x - bounds.min.x;
+    const altoMundo = bounds.max.z - bounds.min.z;
+
+    const espacioUtil = this.minimapaSize - this.minimapaPadding * 2;
+
+    this.minimapaEscala = Math.min(
+      espacioUtil / anchoMundo,
+      espacioUtil / altoMundo
+    );
+
+    this.minimapaOffsetX = (this.minimapaSize - anchoMundo * this.minimapaEscala) / 2;
+    this.minimapaOffsetY = (this.minimapaSize - altoMundo * this.minimapaEscala) / 2;
+
+    this.laberinto.traverse((objeto) => {
+      if (!objeto.isMesh) return;
+
+      const caja = new THREE.Box3().setFromObject(objeto);
+
+      if (
+        !isFinite(caja.min.x) || !isFinite(caja.max.x) ||
+        !isFinite(caja.min.z) || !isFinite(caja.max.z)
+      ) {
+        return;
+      }
+
+      const ancho = caja.max.x - caja.min.x;
+      const alto = caja.max.z - caja.min.z;
+
+      // Evita pintar objetos demasiado pequeños o basura visual
+      if (ancho <= 0.05 && alto <= 0.05) return;
+
+      this.minimapaParedes.push(caja);
+    });
+
+    this.minimapaPreparado = true;
+    this.actualizarMinimapa();
+  }
+
+  mundoAMinimapa(x, z) {
+    const bounds = this.minimapaBounds;
+
+    const mapaX =
+      this.minimapaOffsetX +
+      (x - bounds.min.x) * this.minimapaEscala;
+
+    const mapaY =
+      this.minimapaOffsetY +
+      (bounds.max.z - z) * this.minimapaEscala;
+
+    return {
+      x: mapaX,
+      y: mapaY
+    };
+  }
+
+  actualizarMinimapa() {
+    if (!this.minimapaPreparado || !this.minimapaCtx || !this.camera) return;
+
+    const ctx = this.minimapaCtx;
+    const size = this.minimapaSize;
+
+    ctx.clearRect(0, 0, size, size);
+
+    // Fondo del minimapa
+    ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+    ctx.fillRect(0, 0, size, size);
+
+    // Marco interior
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.35)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(6, 6, size - 12, size - 12);
+
+    // Paredes del laberinto
+    ctx.fillStyle = "rgba(220, 220, 220, 0.85)";
+
+    for (const pared of this.minimapaParedes) {
+      const esquina1 = this.mundoAMinimapa(pared.min.x, pared.min.z);
+      const esquina2 = this.mundoAMinimapa(pared.max.x, pared.max.z);
+
+      const x = Math.min(esquina1.x, esquina2.x);
+      const y = Math.min(esquina1.y, esquina2.y);
+      const w = Math.abs(esquina2.x - esquina1.x);
+      const h = Math.abs(esquina2.y - esquina1.y);
+
+      ctx.fillRect(x, y, Math.max(w, 1), Math.max(h, 1));
+    }
+
+    // Posición del jugador
+    const jugador = this.mundoAMinimapa(
+      this.camera.position.x,
+      this.camera.position.z
+    );
+
+    // Dirección hacia donde mira el jugador
+    const direccion = new THREE.Vector3();
+    this.camera.getWorldDirection(direccion);
+
+    const largoFlecha = 13;
+    const puntaX = jugador.x + direccion.x * largoFlecha;
+    const puntaY = jugador.y - direccion.z * largoFlecha;
+
+    // Punto del jugador
+    ctx.fillStyle = "red";
+    ctx.beginPath();
+    ctx.arc(jugador.x, jugador.y, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Flecha de dirección
+    ctx.strokeStyle = "red";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(jugador.x, jugador.y);
+    ctx.lineTo(puntaX, puntaY);
+    ctx.stroke();
+
+    // Texto
+    ctx.fillStyle = "white";
+    ctx.font = "12px Arial";
+    ctx.fillText("MAPA", 10, 18);
+  }
+
   update() {
     const delta = this.clock.getDelta();
 
@@ -883,6 +1057,8 @@ class MyScene extends THREE.Scene {
     if (this.laberinto) {
       this.laberinto.update();
     }
+
+    this.actualizarMinimapa();
 
     this.renderer.render(this, this.getCamera());
 
