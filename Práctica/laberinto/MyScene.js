@@ -7,12 +7,14 @@
 //Falta el arbol del pickup reloj
 //La camara se mueva cuando andas
 //efecto de estatica general 
+//NO MUEVAS LOS HUESOS Y ESO, EL RAYO ESTA HECHO PARA QUE COLISIONEN A ESA ALTURA; SI NO TE GUSTA COMO ESTA HECHO DIMELO POR WHATSAPPP Y VEMOS QUE HACEMOS
+
 
 
 //JOSE
 //Items flotando mejor colocados y que giren sobre si mismos
 //Animacion con la llave para abrir la puerta
-//Hacer colisiones a los pick ups
+//Colocar bien la llave en el suelo y eso
 
 import * as THREE from 'three'
 import { GUI } from 'gui'
@@ -159,6 +161,11 @@ class MyScene extends THREE.Scene {
     this.rayoMovimiento = new THREE.Raycaster();
     this.distanciaMovimiento = 0.3;
     this.rayoMovimiento.far = this.distanciaMovimiento;
+
+    // Segundo rayo de movimiento más bajo, para chocar con huesos/relojes
+    this.rayoMovimientoBajo = new THREE.Raycaster();
+    this.alturaRayoMovimientoBajo = 0.5;
+    this.rayoMovimientoBajo.far = this.distanciaMovimiento;
 
     // Raycaster interacción
     this.rayoInteraccion = new THREE.Raycaster();
@@ -996,6 +1003,50 @@ class MyScene extends THREE.Scene {
     ctx.fillText("MAPA", 10, 18);
   }
 
+  animarHuesos(delta) {
+    if (!this.laberinto) return;
+
+    const huesosAnimados = new Set();
+
+    const objetos = Laberinto.objetos && Laberinto.objetos.length > 0
+      ? Laberinto.objetos
+      : this.laberinto.children;
+
+    const revisarObjeto = (objeto) => {
+      if (!objeto || !objeto.userData) return;
+
+      const root = objeto.userData.root || objeto;
+      const tipo = objeto.userData.type || root.userData?.type;
+
+      if (tipo !== "HUESO") return;
+
+      if (
+        objeto.userData.recogido ||
+        root.userData?.recogido ||
+        root.visible === false
+      ) {
+        return;
+      }
+
+      if (huesosAnimados.has(root.uuid)) return;
+
+      huesosAnimados.add(root.uuid);
+
+      // Giro sobre sí mismo en eje Y
+      root.rotation.y += delta * 2.0;
+    };
+
+    for (const objeto of objetos) {
+      revisarObjeto(objeto);
+
+      if (objeto.traverse) {
+        objeto.traverse((hijo) => {
+          revisarObjeto(hijo);
+        });
+      }
+    }
+  }
+
   update() {
     const delta = this.clock.getDelta();
 
@@ -1023,9 +1074,77 @@ class MyScene extends THREE.Scene {
     const atras = direccion.clone().negate();
 
     const comprobarColision = (dir) => {
+      if (!this.laberinto) return false;
+
+      const objetos = this.laberinto.children;
+
+      const esVisibleEnJerarquia = (obj) => {
+        let actual = obj;
+
+        while (actual) {
+          if (actual.visible === false) return false;
+          actual = actual.parent;
+        }
+
+        return true;
+      };
+
+      const obtenerTipo = (obj) => {
+        let actual = obj;
+
+        while (actual) {
+          if (actual.userData && actual.userData.type) {
+            return actual.userData.type;
+          }
+
+          if (
+            actual.userData &&
+            actual.userData.root &&
+            actual.userData.root.userData &&
+            actual.userData.root.userData.type
+          ) {
+            return actual.userData.root.userData.type;
+          }
+
+          actual = actual.parent;
+        }
+
+        return null;
+      };
+
+      const esBloqueante = (interseccion) => {
+        const obj = interseccion.object;
+
+        if (!esVisibleEnJerarquia(obj)) return false;
+
+        const tipo = obtenerTipo(obj);
+
+        // Si no tiene tipo, asumimos que es muro del laberinto
+        if (!tipo) return true;
+
+        // Solo bloquean hueso y reloj
+        return tipo === "HUESO" || tipo === "RELOJ";
+      };
+
+      // Rayo normal, desde la cámara
       this.rayoMovimiento.set(this.camera.position, dir);
-      const intersecciones = this.rayoMovimiento.intersectObjects(this.laberinto.children, true);
-      return intersecciones.length > 0;
+
+      const colisionNormal = this.rayoMovimiento
+        .intersectObjects(objetos, true)
+        .some(esBloqueante);
+
+      // Rayo bajo, a la altura de huesos/relojes
+      const origenBajo = this.camera.position.clone();
+      origenBajo.y = this.alturaRayoMovimientoBajo;
+
+      this.rayoMovimientoBajo.set(origenBajo, dir);
+
+      const colisionBaja = this.rayoMovimientoBajo
+        .intersectObjects(objetos, true)
+        .some(esBloqueante);
+
+      // Si cualquiera de los dos rayos choca, no deja andar
+      return colisionNormal || colisionBaja;
     };
 
     if (this.teclas.has('KeyW') || this.teclas.has('ArrowUp')) {
@@ -1056,6 +1175,7 @@ class MyScene extends THREE.Scene {
 
     if (this.laberinto) {
       this.laberinto.update();
+      this.animarHuesos(delta);
     }
 
     this.actualizarMinimapa();
