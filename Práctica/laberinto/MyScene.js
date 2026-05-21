@@ -1,3 +1,4 @@
+//DIANA
 //añadir luces de colores distintas y cambiantes (por ejeplo como para donde esta la salida o donde esta la llave, que alguno sea cambiante)
 //añadir luces de distintos colores, como farolillos o luces anaranjadas tenebrosas, para dar ambiente al laberinto
 //Falta hacer una puerta y animarla cuando uses la lleve
@@ -5,7 +6,10 @@
 //hacer distintos tipos de paredes y suelos
 //Falta el arbol del pickup reloj
 //La camara se mueva cuando andas
+//efecto de estatica general 
 
+
+//JOSE
 //Items flotando mejor colocados y que giren sobre si mismos
 //Animacion con la llave para abrir la puerta
 //Hacer colisiones a los pick ups
