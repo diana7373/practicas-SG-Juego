@@ -129,7 +129,7 @@ class Laberinto extends THREE.Object3D {
 
               this.llave = new Llave(1);
               this.llave.scale.set(0.5, 0.5, 0.5);
-              this.llave.position.set(columna * this.anchoBloque, 0.5, fila * this.anchoBloque);
+              this.llave.position.set(columna * this.anchoBloque, 0.1, fila * this.anchoBloque);
               Laberinto.objetos.push(this.llave);
               this.add(this.llave);
               break;
