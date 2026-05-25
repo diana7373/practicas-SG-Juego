@@ -6,7 +6,9 @@
 //hacer distintos tipos de paredes y suelos
 //Falta el arbol del pickup reloj
 //La camara se mueva cuando andas
-//efecto de estatica general 
+//efecto de estatica general ESTO ES MAS JODIDO; ES UN SHADER QUIZA NO RENTA
+//al recoger ciertos huesos, que se desbloquee la llave con un texto en pantalla diciendolo
+//al recoger la pocion, que salga en pantalla que puedes correr
 //NO MUEVAS LOS HUESOS Y DEMAS, EL RAYO ESTA HECHO PARA QUE COLISIONEN A ESA ALTURA; SI NO TE GUSTA COMO ESTA HECHO DIMELO POR WHATSAPPP Y VEMOS QUE HACEMOS
 //CUANDO HAGAS LA PUERTA; HACEMOS LA PANTALLA FINAL CON EL RECUENTO DE HUESOS Y TIEMPO; PONIENDO HAS GANADO.
 //LA LLAVE LA DEJO EN EL SUELO Y PARA QUE RESALTE LE PONDREMOS UNA LUZ ASI GUAPA QUE PALPITE 
