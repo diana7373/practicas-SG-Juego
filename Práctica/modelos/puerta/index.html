@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Puerta Debug</title>
+    <meta charset="utf-8">
+
+    <script type="text/javascript" src="../../libs/jquery.js"></script>
+
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "../../libs/three.module.js",
+        "gui": "../../libs/dat.gui.module.js",
+        "trackball": "../../libs/TrackballControls.js"
+      }
+    }
+    </script>
+
+    <!-- escena -->
+    <script type="module" src="./MyScene.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #111;
+        }
+
+        #WebGL-output {
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="WebGL-output"></div>
+</body>
+</html>

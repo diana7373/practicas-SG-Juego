@@ -3,6 +3,7 @@ import { Reloj } from '../modelos/reloj/reloj.js'
 import { Pocion } from '../modelos/pocion/pocion.js'
 import { Hueso } from '../modelos/hueso/hueso.js'
 import { Llave } from '../modelos/llave/llave.js'
+import { Puerta } from '../modelos/puerta/Puerta.js'
 
 
 class Laberinto extends THREE.Object3D {
@@ -13,6 +14,7 @@ class Laberinto extends THREE.Object3D {
   static POCION = "P";
   static HUESO = "H";
   static LLAVE = "L";
+  static PUERTA = "S";
   static objetos = [];
 
   constructor(archivo, sincronizacion = null) {
@@ -22,6 +24,7 @@ class Laberinto extends THREE.Object3D {
 
     // Cargamos las texturas (puedes añadir el truco del ?v=1 para el caché aquí también)
     const baseColor = loaderTextura.load('texturas/catacumba/catacumba_color.jpg');
+    baseColor.colorSpace = THREE.SRGBColorSpace; // <-- ¡Esta es la clave!
     const normalMap = loaderTextura.load('texturas/catacumba/catacumba_normal.jpg');
     const roughnessMap = loaderTextura.load('texturas/catacumba/catacumba_r.jpg');
     const aoMap = loaderTextura.load('texturas/catacumba/catacumba_ao.jpg');
@@ -49,7 +52,7 @@ class Laberinto extends THREE.Object3D {
     // Si pones (1,1,1) no habrá vértices suficientes para deformar.
     const bloqueGeo = new THREE.BoxGeometry(
       this.anchoBloque, this.altoBloque, this.anchoBloque,
-      64, 64, 64 // Añadimos segmentos para el relieve
+      32, 32, 32 // Añadimos segmentos para el relieve
     );
 
     // IMPORTANTE: Para que el AO (Ambient Occlusion) funcione en Three.js, 
@@ -133,6 +136,23 @@ class Laberinto extends THREE.Object3D {
               Laberinto.objetos.push(this.llave);
               this.add(this.llave);
               break;
+
+            case Laberinto.PUERTA:
+
+            this.puerta = new Puerta();
+
+            this.puerta.scale.set(1,1,1);
+            this.puerta.position.set(columna * this.anchoBloque, 2.2, fila * this.anchoBloque);
+            this.puerta.rotation.set(0,0,0);
+
+            // IMPORTANTE: usar sistema del laberinto
+            this.getMundoFromCelda(fila, columna, this.puerta.position);
+
+            this.add(this.puerta);
+
+            Laberinto.objetos.push(this.puerta); 
+
+            break;
           }
         }
       }
@@ -153,9 +173,12 @@ class Laberinto extends THREE.Object3D {
     salida.z = fila * this.anchoBloque + this.position.z;
   }
 
-  update() {
+  update(delta) {
     if (this.existeReloj) {
-      this.reloj.update();
+      this.reloj.update(delta);
+    }
+    if (this.puerta) {
+      this.puerta.update?.(delta);
     }
   }
 }

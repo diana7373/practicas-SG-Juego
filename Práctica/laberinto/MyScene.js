@@ -1,7 +1,6 @@
 //DIANA
 //añadir luces de colores distintas y cambiantes (por ejeplo como para donde esta la salida o donde esta la llave, que alguno sea cambiante)
 //añadir luces de distintos colores, como farolillos o luces anaranjadas tenebrosas, para dar ambiente al laberinto
-//Falta hacer una puerta y animarla cuando uses la lleve
 //Falta poner materiales y texturas a los pickups y colocarlos y mejorarlos
 //hacer distintos tipos de paredes y suelos
 //Falta el arbol del pickup reloj
@@ -26,6 +25,7 @@ import { Llave } from '../modelos/llave/llave.js'
 import { Reloj } from '../modelos/reloj/reloj.js'
 import { FontLoader } from '../libs/FontLoader.js'
 import { TextGeometry } from '../libs/TextGeometry.js'
+import { Puerta } from '../modelos/puerta/Puerta.js'
 
 class MyScene extends THREE.Scene {
 
@@ -305,6 +305,18 @@ class MyScene extends THREE.Scene {
 
     if (intersecciones.length > 0) {
       const objetoClicado = intersecciones[0].object;
+
+      if (objetoClicado.userData.type === "POMO") {
+        const puerta = objetoClicado.userData.root;
+
+        if (this.llaveEnMano) {
+          puerta.abrir();
+          console.log("Abriendo la puerta...");
+        } else {
+          console.log("Necesitas la llave");
+        }
+        return; // Salimos aquí para que el pomo no se recoja ni desaparezca
+      }
 
       if (objetoClicado.userData.recogido) return;
 
@@ -1125,7 +1137,7 @@ class MyScene extends THREE.Scene {
         if (!tipo) return true;
 
         // Solo bloquean hueso y reloj
-        return tipo === "HUESO" || tipo === "RELOJ";
+        return tipo === "HUESO" || tipo === "RELOJ" || tipo === "PUERTA";
       };
 
       // Rayo normal, desde la cámara
@@ -1176,8 +1188,17 @@ class MyScene extends THREE.Scene {
     this.camera.position.y = this.alturaJugador;
 
     if (this.laberinto) {
-      this.laberinto.update();
+      this.laberinto.update(delta);
       this.animarHuesos(delta);
+
+      this.laberinto.traverse((obj) => {
+        if (obj.userData && obj.userData.type === "PUERTA") {
+          const puerta = obj.userData.root;
+          if (puerta && typeof puerta.update === 'function') {
+            puerta.update(delta);
+          }
+        }
+      });
     }
 
     this.actualizarMinimapa();
