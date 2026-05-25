@@ -1,11 +1,9 @@
 //DIANA
 //añadir luces de colores distintas y cambiantes (por ejeplo como para donde esta la salida o donde esta la llave, que alguno sea cambiante)
 //añadir luces de distintos colores, como farolillos o luces anaranjadas tenebrosas, para dar ambiente al laberinto
-//Falta poner materiales y texturas a los pickups y colocarlos y mejorarlos
 //hacer distintos tipos de paredes y suelos
 //Falta el arbol del pickup reloj
 //La camara se mueva cuando andas
-//efecto de estatica general ESTO ES MAS JODIDO; ES UN SHADER QUIZA NO RENTA
 //al recoger ciertos huesos, que se desbloquee la llave con un texto en pantalla diciendolo
 //al recoger la pocion, que salga en pantalla que puedes correr
 //NO MUEVAS LOS HUESOS Y DEMAS, EL RAYO ESTA HECHO PARA QUE COLISIONEN A ESA ALTURA; SI NO TE GUSTA COMO ESTA HECHO DIMELO POR WHATSAPPP Y VEMOS QUE HACEMOS
@@ -437,7 +435,7 @@ class MyScene extends THREE.Scene {
     });
   }
 
-  createFlashLight() {
+createFlashLight() {
     this.flashLight = new THREE.SpotLight(
       0xfff0cc,
       15,
@@ -454,6 +452,9 @@ class MyScene extends THREE.Scene {
     this.flashLight.shadow.mapSize.height = 1024;
     this.flashLight.shadow.camera.near = 0.1;
     this.flashLight.shadow.camera.far = 10;
+
+    this.flashLight.shadow.bias = -0.0005; 
+    this.flashLight.shadow.normalBias = 0.02;
 
     this.flashLight.target.position.set(0, 0, -1);
 
@@ -575,23 +576,35 @@ class MyScene extends THREE.Scene {
     return gui;
   }
 
-  createLights() {
-    this.ambientLight = new THREE.AmbientLight(0x888888, this.guiControls.ambientIntensity);
-    this.add(this.ambientLight);
+createLights() {
+  this.ambientLight = new THREE.AmbientLight(
+    0x888888,
+    this.guiControls.ambientIntensity
+  );
+  this.add(this.ambientLight);
 
-    this.pointLight = new THREE.SpotLight(0xffffff, this.guiControls.lightPower);
-    this.pointLight.position.set(0, 8, 0);
-    this.pointLight.angle = Math.PI / 5;
-    this.pointLight.penumbra = 0.8;
-    this.pointLight.decay = 2;
-    this.pointLight.distance = 12;
+  this.pointLight = new THREE.SpotLight(
+    0xffffff,
+    this.guiControls.lightPower
+  );
 
-    this.pointLight.castShadow = true;
-    this.pointLight.shadow.mapSize.width = 1024;
-    this.pointLight.shadow.mapSize.height = 1024;
+  this.pointLight.position.set(0, 8, 0);
+  this.pointLight.angle = Math.PI / 5;
+  this.pointLight.penumbra = 0.8;
+  this.pointLight.decay = 2;
+  this.pointLight.distance = 12;
 
-    this.add(this.pointLight);
-  }
+  this.pointLight.castShadow = true;
+  this.pointLight.shadow.mapSize.width = 1024;
+  this.pointLight.shadow.mapSize.height = 1024;
+
+  // Esto era lo que estaba mal:
+  // antes ponía this.flashLight.shadow...
+  this.pointLight.shadow.bias = -0.0005;
+  this.pointLight.shadow.normalBias = 0.02;
+
+  this.add(this.pointLight);
+}
 
   setLightPower(valor) {
     this.pointLight.intensity = valor;
