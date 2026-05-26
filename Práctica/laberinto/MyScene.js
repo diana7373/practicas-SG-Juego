@@ -1,15 +1,5 @@
 //DIANA
-  //añadir luces de colores distintas y cambiantes (por ejeplo como para donde esta la salida o donde esta la llave, que alguno sea cambiante)
-  //añadir luces de distintos colores, como farolillos o luces anaranjadas tenebrosas, para dar ambiente al laberinto
-  //hacer distintos tipos de paredes y suelos
-  //Falta el arbol del pickup reloj
-  //La camara se mueva cuando andas
-  //al recoger ciertos huesos, que se desbloquee la llave con un texto en pantalla diciendolo
-  //al recoger la pocion, que salga en pantalla que puedes correr
-  //CUANDO HAGAS LA PUERTA; HACEMOS LA PANTALLA FINAL CON EL RECUENTO DE HUESOS Y TIEMPO; PONIENDO HAS GANADO.
-  //La llave se desbloquea cuando pilles todos los items, cada vez que pilles un item, que salga algo en pantalla como frase
-  //cuando se desbloquea una llave, ponerlo tambien como si fuera una pista
-  //Si intentas interactuar con la puerta sin tener la llave, un texto HTML que diga que necesitas la llave
+//Falta el arbol del pickup reloj
 
 import * as THREE from 'three'
 import { GUI } from 'gui'
@@ -55,6 +45,21 @@ class MyScene extends THREE.Scene {
 
     // Estado del ratón
     this.ratonLiberadoPorControl = false;
+
+    this.tiempoExtraReloj = 0;
+
+    this.timerBobbing = 0;         // Registra el tiempo del paso
+    this.velocidadBobbing = 12;    // Qué tan rápido da los "pasos" la cámara
+    // Qué tanto sube y baja (0.05 a 0.1 suele ser lo ideal para no marear)
+    this.intensidadBobbing = 0.08;
+
+    this.enIntro = true; 
+    this.frasesIntro = [
+      "Te encuentras atrapado en lo profundo de las catacumbas...",
+      "Una fría presencia inunda los pasillos del laberinto.",
+      "Estás encerrado, buena suerte intentando salir de aquí...",
+      "Prueba a recoger todos los huesos... antes de convertirte en uno de ellos."
+    ];
 
     // Posición del ratón en coordenadas normalizadas para el raycaster
     this.mouse = new THREE.Vector2(0, 0);
@@ -118,11 +123,23 @@ class MyScene extends THREE.Scene {
     this.pantallaPausa = document.getElementById("pantalla-pausa");
     this.btnReiniciarPausa = document.getElementById("btn-reiniciar-pausa");
     this.btnSalirPausa = document.getElementById("btn-salir-pausa");
+    this.btnGanarReintentar = document.getElementById("btn-ganar-reintentar");
 
     // Botón de reintentar cuando acaba la partida
     if (this.btnReintentar) {
       this.btnReintentar.addEventListener("click", () => {
         window.location.reload();
+      });
+    }
+
+    if (this.btnGanarReintentar) {
+      this.btnGanarReintentar.addEventListener('click', () => {
+        // 1. Forzamos la liberación del puntero por si Three.js lo mantiene retenido
+        if (this.cameraControl && this.cameraControl.unlock) {
+          this.cameraControl.unlock();
+        }
+        // 2. Recargamos la página por completo
+        location.reload(); 
       });
     }
 
@@ -218,6 +235,8 @@ class MyScene extends THREE.Scene {
 
       // Preparamos el minimapa cuando el laberinto ya existe
       this.prepararMinimapaLaberinto();
+
+      this.iniciarSecuenciaIntro();
     });
   }
 
@@ -244,6 +263,8 @@ class MyScene extends THREE.Scene {
 
   actualizarTemporizador() {
     if (!this.hudTemporizador) return;
+
+    if (this.enIntro || this.juegoTerminado) return;
 
     // Si está pausado o acabada la partida, el tiempo no baja
     if (this.partidaAcabada || this.juegoPausado) return;
@@ -306,6 +327,9 @@ class MyScene extends THREE.Scene {
         if (this.llaveEnMano) {
           puerta.abrir();
           console.log("Abriendo la puerta...");
+          setTimeout(() => {
+            this.gestionarVictoria();
+          }, 2000); // 2.5 segundos de retraso
         } else {
           this.mostrarMensajeAlerta("NECESITAS LA LLAVE PARA SALIR");
           console.log("Necesitas la llave");
@@ -346,6 +370,8 @@ class MyScene extends THREE.Scene {
 
         // Al recoger el reloj, suma 1 minuto al temporizador
         this.sumarTiempo(60);
+
+        this.tiempoExtraReloj += 60;
 
         console.log("Has recogido un reloj: +1 minuto");
         this.mostrarMensajeAlerta("SE TE HA SUMADO 1 MINUTO AL TEMPORIZADOR");
@@ -1139,6 +1165,89 @@ createLights() {
     }
   }
 
+  gestionarVictoria() {
+    // 1. Detener el temporizador del juego (asumiendo que manejas un intervalo o flag)
+    this.juegoTerminado = true; 
+
+    if (this.cameraControl) {
+      this.cameraControl.unlock(); 
+    }
+
+    // 2. Calcular el tiempo empleado
+    const tiempoInicialSegundos = 300; // 05:00 minutos
+    // Aquí pon la variable donde guardes los segundos actuales que le quedaban al jugador:
+    const tiempoRestanteSegundos = this.tiempoRestante || 0; 
+
+    const tiempoTardado = tiempoInicialSegundos - tiempoRestanteSegundos + this.tiempoExtraReloj;
+    
+    const minutos = Math.floor(tiempoTardado / 60).toString().padStart(2, '0');
+    const segundos = (tiempoTardado % 60).toString().padStart(2, '0');
+    
+    // 3. Inyectar el texto del tiempo en el HTML
+    const textoTiempo = document.getElementById("tiempo-final");
+    if (textoTiempo) {
+      textoTiempo.innerText = `Tiempo empleado: ${minutos}:${segundos}`;
+    }
+
+    // 4. Liberar el bloqueo del puntero del ratón para poder hacer clic en el botón
+    if (this.cameraControl && this.cameraControl.unlock) {
+      this.cameraControl.unlock();
+    }
+
+    // 5. Mostrar la pantalla final de victoria añadiendo la clase CSS
+    const pantallaVictoria = document.getElementById("pantalla-victoria");
+    if (pantallaVictoria) {
+      pantallaVictoria.classList.add("visible");
+    }
+  }
+
+  iniciarSecuenciaIntro() {
+    const pantalla = document.getElementById("pantalla-intro");
+    const contenedorTexto = document.getElementById("texto-intro");
+    if (!pantalla || !contenedorTexto) return;
+
+    let indiceFrase = 0;
+
+    const mostrarSiguienteFrase = () => {
+      // Si ya hemos mostrado todas las frases, terminamos la intro
+      if (indiceFrase >= this.frasesIntro.length) {
+        
+        // 1. Desvanecemos la pantalla negra del fondo
+        pantalla.style.opacity = "0";
+        
+        setTimeout(() => {
+          pantalla.style.display = "none"; // La quitamos del DOM para que no estorbe
+          this.enIntro = false;            // Marcamos que la intro ha terminado
+          
+          console.log("Intro finalizada. ¡Empieza la partida!");
+          this.mostrarMensajeAlerta("¡ENCUENTRA LA SALIDA!");
+        }, 1500); // Espera a que termine la transición de opacidad del fondo
+        
+        return;
+      }
+
+      // 2. Cambiamos el texto e iniciamos el fade-in de la frase actual
+      contenedorTexto.innerText = this.frasesIntro[indiceFrase];
+      contenedorTexto.classList.add("visible");
+
+      // 3. Dejamos la frase visible durante 3 segundos (3000ms)
+      setTimeout(() => {
+        // Quitamos la clase para que haga fade-out (se desvanezca)
+        contenedorTexto.classList.remove("visible");
+        
+        // Avanzamos el índice de la frase
+        indiceFrase++;
+        
+        // Esperamos 1 segundo en negro entre frase y frase antes de lanzar la siguiente
+        setTimeout(mostrarSiguienteFrase, 1000);
+        
+      }, 3000);
+    };
+
+    // Lanzamos la primera iteración de la secuencia de frases
+    mostrarSiguienteFrase();
+  }
+
   update() {
     const delta = this.clock.getDelta();
 
@@ -1239,31 +1348,63 @@ createLights() {
       return colisionNormal || colisionBaja;
     };
 
+    let seEstaMoviendo = false;
+
     if (this.teclas.has('KeyW') || this.teclas.has('ArrowUp')) {
       if (!comprobarColision(direccion)) {
         this.cameraControl.moveForward(velocidad_actual);
+        seEstaMoviendo = true;
       }
     }
 
     if (this.teclas.has('KeyS') || this.teclas.has('ArrowDown')) {
       if (!comprobarColision(atras)) {
         this.cameraControl.moveForward(-velocidad_actual);
+        seEstaMoviendo = true;
       }
     }
 
     if (this.teclas.has('KeyA') || this.teclas.has('ArrowLeft')) {
       if (!comprobarColision(izquierda)) {
         this.cameraControl.moveRight(-velocidad_actual);
+        seEstaMoviendo = true;
       }
     }
 
     if (this.teclas.has('KeyD') || this.teclas.has('ArrowRight')) {
       if (!comprobarColision(derecha)) {
         this.cameraControl.moveRight(velocidad_actual);
+        seEstaMoviendo = true;
       }
     }
 
-    this.camera.position.y = this.alturaJugador;
+    if (seEstaMoviendo && !this.juegoTerminado) {
+      // Si corre con la poción, podemos acelerar el ritmo del balanceo
+      const multiplicadorVelocidad = this.sprintando ? 1.5 : 1.0;
+      
+      // Avanzamos el temporizador en base al delta de tiempo de renderizado
+      this.timerBobbing += delta * this.velocidadBobbing * multiplicadorVelocidad;
+      
+      // Calculamos el desplazamiento vertical con el seno
+      const desplazamientoY = Math.sin(this.timerBobbing) * this.intensidadBobbing;
+      
+      // Aplicamos la altura base del jugador + el balanceo
+      this.camera.position.y = this.alturaJugador + desplazamientoY;
+
+    } else {
+      // Si el jugador está quieto, devolvemos la cámara suavemente a su altura normal
+      // Usamos una interpolación lineal (lerp) para que el retorno no sea un golpe seco
+      this.camera.position.y = THREE.MathUtils.lerp(
+        this.camera.position.y, 
+        this.alturaJugador, 
+        0.1 // Velocidad de retorno
+      );
+      
+      // Reseteamos sutilmente el timer si se detiene para evitar saltos raros al reanudar
+      if (Math.abs(this.camera.position.y - this.alturaJugador) < 0.01) {
+        this.timerBobbing = 0;
+      }
+    }
 
     if (this.laberinto) {
       this.laberinto.update(delta);

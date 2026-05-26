@@ -4,6 +4,7 @@ import { Pocion } from '../modelos/pocion/pocion.js'
 import { Hueso } from '../modelos/hueso/hueso.js'
 import { Llave } from '../modelos/llave/llave.js'
 import { Puerta } from '../modelos/puerta/Puerta.js'
+import { Lampara } from '../modelos/lampara/Lampara.js'
 
 
 class Laberinto extends THREE.Object3D {
@@ -173,13 +174,18 @@ class Laberinto extends THREE.Object3D {
             this.puerta.scale.set(1,1,1);
             this.puerta.position.set(columna * this.anchoBloque, 2.2, fila * this.anchoBloque);
             this.puerta.rotation.set(0,0,0);
-
-            // IMPORTANTE: usar sistema del laberinto
             this.getMundoFromCelda(fila, columna, this.puerta.position);
 
             this.add(this.puerta);
+            Laberinto.objetos.push(this.puerta);
 
-            Laberinto.objetos.push(this.puerta); 
+            this.lampara = new Lampara();
+            this.getMundoFromCelda(fila, columna, this.lampara.position);
+            this.lampara.position.z -= 0.5; // Desplázala en X o Z según la orientación de tus pasillos
+            this.lampara.position.y = 3;    // Apoyada firmemente en el suelo
+            this.lampara.scale.set(0.02, 0.02, 0.02); 
+            this.add(this.lampara);
+            Laberinto.objetos.push(this.lampara);
 
             // (Color anaranjado/rojizo: 0xff5500, Intensidad: 10, Distancia: 8)
             this.luzPuerta = new THREE.PointLight(0xff5500, 10, 8);
