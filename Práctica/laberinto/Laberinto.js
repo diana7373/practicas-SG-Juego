@@ -16,6 +16,7 @@ class Laberinto extends THREE.Object3D {
   static LLAVE = "L";
   static PUERTA = "S";
   static objetos = [];
+  static huesosTotales = 0;
 
   constructor(archivo, sincronizacion = null) {
     //material
@@ -142,6 +143,9 @@ class Laberinto extends THREE.Object3D {
               this.hueso.position.set(columna * this.anchoBloque, 0.5, fila * this.anchoBloque);
               Laberinto.objetos.push(this.hueso);
               this.add(this.hueso);
+
+              Laberinto.huesosTotales++;
+
               break;
             case Laberinto.LLAVE:
 
@@ -156,6 +160,9 @@ class Laberinto extends THREE.Object3D {
               this.add(luzLlave);
 
               this.llave.luzAsociada = luzLlave;
+
+              this.llave.visible = false;
+              luzLlave.visible = false;
 
               break;
 

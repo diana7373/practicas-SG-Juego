@@ -271,6 +271,36 @@
         #btn-salir-pausa:hover {
             background: #555555;
         }
+
+        /* Mensaje de alerta flotante*/
+        #mensaje-alerta {
+            position: fixed;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            
+            background: rgba(42, 1, 1, 0.85); /* Rojo oscuro tenebroso */
+            border: 2px solid #822020;
+            border-radius: 8px;
+            padding: 15px 30px;
+            
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-align: center;
+            text-shadow: 0 0 8px black;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.6);
+            
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        #mensaje-alerta.visible {
+            opacity: 1;
+        }
     </style>
 </head>
 
@@ -326,6 +356,7 @@
             </div>
         </div>
 
+        <div id="mensaje-alerta"></div>
 
     </div>
 
