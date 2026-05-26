@@ -1,15 +1,15 @@
 //DIANA
-  //añadir luces de colores distintas y cambiantes (por ejeplo como para donde esta la salida o donde esta la llave, que alguno sea cambiante)
-  //añadir luces de distintos colores, como farolillos o luces anaranjadas tenebrosas, para dar ambiente al laberinto
-  //hacer distintos tipos de paredes y suelos
-  //Falta el arbol del pickup reloj
-  //La camara se mueva cuando andas
-  //al recoger ciertos huesos, que se desbloquee la llave con un texto en pantalla diciendolo
-  //al recoger la pocion, que salga en pantalla que puedes correr
-  //CUANDO HAGAS LA PUERTA; HACEMOS LA PANTALLA FINAL CON EL RECUENTO DE HUESOS Y TIEMPO; PONIENDO HAS GANADO.
-  //La llave se desbloquea cuando pilles todos los items, cada vez que pilles un item, que salga algo en pantalla como frase
-  //cuando se desbloquea una llave, ponerlo tambien como si fuera una pista
-  //Si intentas interactuar con la puerta sin tener la llave, un texto HTML que diga que necesitas la llave
+//hacer distintos tipos de paredes y suelos
+//Falta el arbol del pickup reloj
+//La camara se mueva cuando andas
+//NO MUEVAS LOS HUESOS Y DEMAS, EL RAYO ESTA HECHO PARA QUE COLISIONEN A ESA ALTURA; SI NO TE GUSTA COMO ESTA HECHO DIMELO POR WHATSAPPP Y VEMOS QUE HACEMOS
+//CUANDO HAGAS LA PUERTA; HACEMOS LA PANTALLA FINAL CON EL RECUENTO DE HUESOS Y TIEMPO; PONIENDO HAS GANADO.
+//LA LLAVE LA DEJO EN EL SUELO Y PARA QUE RESALTE LE PONDREMOS UNA LUZ ASI GUAPA QUE PALPITE 
+//SI ALGO NO TE GUSTA DIMELO Y LO CAMBIAMOS
+
+
+//JOSE
+//Animacion con la llave para abrir la puerta
 
 import * as THREE from 'three'
 import { GUI } from 'gui'
