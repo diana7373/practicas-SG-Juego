@@ -307,6 +307,7 @@ class MyScene extends THREE.Scene {
           puerta.abrir();
           console.log("Abriendo la puerta...");
         } else {
+          this.mostrarMensajeAlerta("NECESITAS LA LLAVE PARA SALIR");
           console.log("Necesitas la llave");
         }
         return; // Salimos aquí para que el pomo no se recoja ni desaparezca
@@ -327,6 +328,7 @@ class MyScene extends THREE.Scene {
       if (objetoClicado.userData.type === "HUESO") {
         this.contadorHuesos++;
         this.hudHuesos.textContent = this.contadorHuesos;
+        this.comprobarHuesosParaLlave();
       }
 
       if (objetoClicado.userData.type === "RELOJ") {
@@ -346,6 +348,7 @@ class MyScene extends THREE.Scene {
         this.sumarTiempo(60);
 
         console.log("Has recogido un reloj: +1 minuto");
+        this.mostrarMensajeAlerta("SE TE HA SUMADO 1 MINUTO AL TEMPORIZADOR");
       }
 
       if (objetoClicado.userData.type === "POCION") {
@@ -373,6 +376,7 @@ class MyScene extends THREE.Scene {
         this.actualizarBarraSprint();
 
         console.log("Has recogido una poción. Sprint desbloqueado");
+        this.mostrarMensajeAlerta("¡SPRINT DESBLOQUEADO!");
       }
 
       if (objetoClicado.userData.type === "LLAVE") {
@@ -1091,6 +1095,47 @@ createLights() {
           revisarObjeto(hijo);
         });
       }
+    }
+  }
+
+  mostrarMensajeAlerta(texto) {
+    const elementoAlerta = document.getElementById("mensaje-alerta");
+    if (!elementoAlerta) return;
+
+    // Guardamos el texto del mensaje
+    elementoAlerta.innerText = texto;
+    // Añadimos la clase para que se vuelva opaco y visible
+    elementoAlerta.classList.add("visible");
+
+    // Limpiamos cualquier temporizador previo si el usuario cliquea muy rápido
+    if (this.alertaTimeout) {
+      clearTimeout(this.alertaTimeout);
+    }
+
+    // A los 2 segundos (2000 ms) iniciamos la animación de desaparición
+    this.alertaTimeout = setTimeout(() => {
+      elementoAlerta.classList.remove("visible");
+    }, 2000);
+  }
+
+  comprobarHuesosParaLlave() {
+    // Si los huesos que llevamos son iguales a los totales que tenía el laberinto
+    if (this.contadorHuesos === Laberinto.huesosTotales) {
+
+      console.log("¡Has recogido todos los huesos! La llave ha aparecido.");
+      this.mostrarMensajeAlerta("¡LA LLAVE HA APARECIDO EN EL LABERINTO!");
+
+      // Buscamos la llave en el array de objetos para hacerla visible junto a su luz
+      Laberinto.objetos.forEach((obj) => {
+        if (obj.userData && obj.userData.type === "LLAVE") {
+          const rootLlave = obj.userData.root || obj;
+          
+          rootLlave.visible = true; // Mostramos la llave
+          if (rootLlave.luzAsociada) {
+            rootLlave.luzAsociada.visible = true; // Mostramos su luz dorada
+          }
+        }
+      });
     }
   }
 
