@@ -336,6 +336,16 @@ class MyScene extends THREE.Scene {
       if (objetoClicado.userData.type === "RELOJ") {
         this.pickupReloj.style.display = "flex";
 
+        // Buscamos el nodo raíz del modelo
+        const rootReloj = objetoClicado.userData.root || objetoClicado;
+        // Buscamos la luz en el objeto clicado o en su root
+        const luzDeReloj = objetoClicado.luzAsociada || rootReloj.luzAsociada;
+        
+        if (luzDeReloj) {
+          this.laberinto.remove(luzDeReloj);
+          luzDeReloj.dispose();
+        }
+
         // Al recoger el reloj, suma 1 minuto al temporizador
         this.sumarTiempo(60);
 
@@ -345,6 +355,14 @@ class MyScene extends THREE.Scene {
       if (objetoClicado.userData.type === "POCION") {
         if (this.pickupPocion) {
           this.pickupPocion.style.display = "flex";
+        }
+
+        const rootPocion = objetoClicado.userData.root || objetoClicado;
+        const luzDePocion = objetoClicado.luzAsociada || rootPocion.luzAsociada;
+        
+        if (luzDePocion) {
+          this.laberinto.remove(luzDePocion);
+          luzDePocion.dispose();
         }
 
         this.tienePocion = true;
@@ -365,6 +383,12 @@ class MyScene extends THREE.Scene {
         this.pickupLlave.style.display = "flex";
 
         const root = objetoClicado.userData.root || objetoClicado;
+
+        const luzDeLlave = objetoClicado.luzAsociada || root.luzAsociada;
+        if (luzDeLlave) {
+          this.laberinto.remove(luzDeLlave);
+          luzDeLlave.dispose();
+        }
 
         root.visible = false;
 

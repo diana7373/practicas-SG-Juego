@@ -111,6 +111,13 @@ class Laberinto extends THREE.Object3D {
               this.reloj.position.set(columna * this.anchoBloque, 0.5, fila * this.anchoBloque);
               Laberinto.objetos.push(this.reloj);
               this.add(this.reloj);
+
+              const luzReloj = new THREE.PointLight(0x00bfff, 3, 1.5);
+              luzReloj.position.set(columna * this.anchoBloque, 0.6, fila * this.anchoBloque);
+              this.add(luzReloj)
+
+              this.reloj.luzAsociada = luzReloj;
+
               break;
             case Laberinto.POCION:
 
@@ -119,7 +126,15 @@ class Laberinto extends THREE.Object3D {
               this.pocion.position.set(columna * this.anchoBloque, 0.5, fila * this.anchoBloque);
               Laberinto.objetos.push(this.pocion);
               this.add(this.pocion);
+
+              const luzPocion = new THREE.PointLight(0xd400ff, 3, 1.5);
+              luzPocion.position.set(columna * this.anchoBloque, 0.6, fila * this.anchoBloque);
+              this.add(luzPocion);
+
+              this.pocion.luzAsociada = luzPocion;
+
               break;
+
             case Laberinto.HUESO:
 
               this.hueso = new Hueso(1);
@@ -135,6 +150,13 @@ class Laberinto extends THREE.Object3D {
               this.llave.position.set(columna * this.anchoBloque, 0.1, fila * this.anchoBloque);
               Laberinto.objetos.push(this.llave);
               this.add(this.llave);
+
+              const luzLlave = new THREE.PointLight(0xffd700, 1, 4);
+              luzLlave.position.set(columna * this.anchoBloque, 0.2, fila * this.anchoBloque);
+              this.add(luzLlave);
+
+              this.llave.luzAsociada = luzLlave;
+
               break;
 
             case Laberinto.PUERTA:
@@ -151,6 +173,14 @@ class Laberinto extends THREE.Object3D {
             this.add(this.puerta);
 
             Laberinto.objetos.push(this.puerta); 
+
+            // (Color anaranjado/rojizo: 0xff5500, Intensidad: 10, Distancia: 8)
+            this.luzPuerta = new THREE.PointLight(0xff5500, 10, 8);
+            // La colocamos en las mismas coordenadas X y Z que la puerta, pero más arriba (Y = 4.5)
+            this.luzPuerta.position.set(columna * this.anchoBloque, 3, fila * this.anchoBloque);
+            this.add(this.luzPuerta);
+
+            this.tiempoParpadeo = 0;
 
             break;
           }
@@ -179,6 +209,27 @@ class Laberinto extends THREE.Object3D {
     }
     if (this.puerta) {
       this.puerta.update?.(delta);
+    }
+    if (this.luzPuerta) {
+      // Sumamos el tiempo que ha pasado desde el último frame
+      this.tiempoParpadeo += delta;
+
+      // Solo cambiamos la intensidad de la luz cada 0.15 segundos
+      // Puedes subir este número (ej. 0.3) para que sea aún más lento
+      if (this.tiempoParpadeo > 0.15) {
+        
+        // Un 70% de las veces la luz estará fuerte, un 30% pegará un bajón casi apagándose
+        if (Math.random() > 0.3) {
+          // Luz fuerte normal (entre 15 y 25)
+          this.luzPuerta.intensity = 5 + Math.random() * 10; 
+        } else {
+          // Bajón de luz tenebroso (casi apagada, entre 0 y 5)
+          this.luzPuerta.intensity = Math.random() * 5;
+        }
+
+        // Reseteamos el temporizador para que espere otros 0.15 segundos
+        this.tiempoParpadeo = 0;
+      }
     }
   }
 }
