@@ -24,6 +24,7 @@ class MyScene extends THREE.Scene {
     // Jugador
     this.alturaJugador = 1.6;
     this.velocidadMovimiento = 4.5;
+
     // Sprint desbloqueado con poción
     this.velocidadSprint = 8.5;
     this.tienePocion = false;
@@ -48,12 +49,11 @@ class MyScene extends THREE.Scene {
 
     this.tiempoExtraReloj = 0;
 
-    this.timerBobbing = 0;         // Registra el tiempo del paso
-    this.velocidadBobbing = 12;    // Qué tan rápido da los "pasos" la cámara
-    // Qué tanto sube y baja (0.05 a 0.1 suele ser lo ideal para no marear)
+    this.timerBobbing = 0;
+    this.velocidadBobbing = 12;
     this.intensidadBobbing = 0.08;
 
-    this.enIntro = true; 
+    this.enIntro = true;
     this.frasesIntro = [
       "Te encuentras atrapado en lo profundo de las catacumbas...",
       "Una fría presencia inunda los pasillos del laberinto.",
@@ -115,6 +115,7 @@ class MyScene extends THREE.Scene {
     this.pickupReloj = document.getElementById("pickup-reloj");
     this.pantallaGameOver = document.getElementById("pantalla-game-over");
     this.btnReintentar = document.getElementById("btn-reintentar");
+
     // Barra de sprint
     this.crearBarraSprint();
     this.actualizarBarraSprint();
@@ -134,12 +135,11 @@ class MyScene extends THREE.Scene {
 
     if (this.btnGanarReintentar) {
       this.btnGanarReintentar.addEventListener('click', () => {
-        // 1. Forzamos la liberación del puntero por si Three.js lo mantiene retenido
         if (this.cameraControl && this.cameraControl.unlock) {
           this.cameraControl.unlock();
         }
-        // 2. Recargamos la página por completo
-        location.reload(); 
+
+        location.reload();
       });
     }
 
@@ -315,127 +315,190 @@ class MyScene extends THREE.Scene {
     this.rayoInteraccion.setFromCamera(this.mouse, this.camera);
 
     const objetosInteractuables = Laberinto.objetos || this.laberinto.children;
-
     const intersecciones = this.rayoInteraccion.intersectObjects(objetosInteractuables, true);
 
-    if (intersecciones.length > 0) {
-      const objetoClicado = intersecciones[0].object;
+    if (intersecciones.length === 0) return;
 
-      if (objetoClicado.userData.type === "POMO") {
-        const puerta = objetoClicado.userData.root;
+    const objetoClicado = intersecciones[0].object;
 
-        if (this.llaveEnMano) {
+    const obtenerRoot = (obj) => {
+      let actual = obj;
+
+      while (actual) {
+        if (actual.userData && actual.userData.root) {
+          return actual.userData.root;
+        }
+
+        // Si no tiene userData.root pero estamos dentro de la clase Puerta,
+        // usamos el padre que contiene el método abrir().
+        if (typeof actual.abrir === "function") {
+          return actual;
+        }
+
+        actual = actual.parent;
+      }
+
+      return obj;
+    };
+
+    const obtenerTipo = (obj) => {
+      let actual = obj;
+
+      while (actual) {
+        if (actual.userData && actual.userData.type) {
+          return actual.userData.type;
+        }
+
+        if (
+          actual.userData &&
+          actual.userData.root &&
+          actual.userData.root.userData &&
+          actual.userData.root.userData.type
+        ) {
+          return actual.userData.root.userData.type;
+        }
+
+        actual = actual.parent;
+      }
+
+      return null;
+    };
+
+    const tipo = obtenerTipo(objetoClicado);
+    const root = obtenerRoot(objetoClicado);
+
+    console.log('Objeto clicado:', objetoClicado, 'Tipo:', tipo, 'Root:', root);
+
+    // IMPORTANTE:
+    // La puerta NO es un objeto recogible. Antes desaparecía porque cualquier objeto
+    // clicado pasaba por root.visible = false. Ahora PUERTA/POMO se tratan aparte.
+    if (tipo === "POMO" || tipo === "PUERTA") {
+      const puerta = root;
+
+      if (this.llaveEnMano) {
+        if (puerta && typeof puerta.abrir === "function") {
           puerta.abrir();
           console.log("Abriendo la puerta...");
+
           setTimeout(() => {
             this.gestionarVictoria();
-          }, 2000); // 2.5 segundos de retraso
+          }, 2000);
         } else {
-          this.mostrarMensajeAlerta("NECESITAS LA LLAVE PARA SALIR");
-          console.log("Necesitas la llave");
+          console.warn("Se ha clicado una puerta, pero no encuentro el método abrir().");
         }
-        return; // Salimos aquí para que el pomo no se recoja ni desaparezca
-      }
-
-      if (objetoClicado.userData.recogido) return;
-
-      objetoClicado.userData.recogido = true;
-
-      console.log('Objeto clicado:', objetoClicado);
-
-      if (objetoClicado.userData.root) {
-        objetoClicado.userData.root.visible = false;
       } else {
-        objetoClicado.visible = false;
+        this.mostrarMensajeAlerta("NECESITAS LA LLAVE PARA SALIR");
+        console.log("Necesitas la llave");
       }
 
-      if (objetoClicado.userData.type === "HUESO") {
-        this.contadorHuesos++;
-        this.hudHuesos.textContent = this.contadorHuesos;
-        this.comprobarHuesosParaLlave();
-      }
+      return;
+    }
 
-      if (objetoClicado.userData.type === "RELOJ") {
-        this.pickupReloj.style.display = "flex";
+    // Solo estos tipos se pueden recoger y desaparecer
+    const tiposRecogibles = ["HUESO", "RELOJ", "POCION", "LLAVE"];
 
-        // Buscamos el nodo raíz del modelo
-        const rootReloj = objetoClicado.userData.root || objetoClicado;
-        // Buscamos la luz en el objeto clicado o en su root
-        const luzDeReloj = objetoClicado.luzAsociada || rootReloj.luzAsociada;
-        
-        if (luzDeReloj) {
-          this.laberinto.remove(luzDeReloj);
+    if (!tiposRecogibles.includes(tipo)) {
+      return;
+    }
+
+    if (objetoClicado.userData.recogido || root.userData?.recogido) return;
+
+    objetoClicado.userData.recogido = true;
+    root.userData.recogido = true;
+
+    // Ocultamos el objeto recogible completo
+    root.visible = false;
+
+    if (tipo === "HUESO") {
+      this.contadorHuesos++;
+      this.hudHuesos.textContent = this.contadorHuesos;
+      this.comprobarHuesosParaLlave();
+    }
+
+    if (tipo === "RELOJ") {
+      this.pickupReloj.style.display = "flex";
+
+      const luzDeReloj = objetoClicado.luzAsociada || root.luzAsociada;
+
+      if (luzDeReloj) {
+        this.laberinto.remove(luzDeReloj);
+
+        if (typeof luzDeReloj.dispose === "function") {
           luzDeReloj.dispose();
         }
-
-        // Al recoger el reloj, suma 1 minuto al temporizador
-        this.sumarTiempo(60);
-
-        this.tiempoExtraReloj += 60;
-
-        console.log("Has recogido un reloj: +1 minuto");
-        this.mostrarMensajeAlerta("SE TE HA SUMADO 1 MINUTO AL TEMPORIZADOR");
       }
 
-      if (objetoClicado.userData.type === "POCION") {
-        if (this.pickupPocion) {
-          this.pickupPocion.style.display = "flex";
-        }
+      // Al recoger el reloj, suma 1 minuto al temporizador
+      this.sumarTiempo(60);
 
-        const rootPocion = objetoClicado.userData.root || objetoClicado;
-        const luzDePocion = objetoClicado.luzAsociada || rootPocion.luzAsociada;
-        
-        if (luzDePocion) {
-          this.laberinto.remove(luzDePocion);
+      this.tiempoExtraReloj += 60;
+
+      console.log("Has recogido un reloj: +1 minuto");
+      this.mostrarMensajeAlerta("SE TE HA SUMADO 1 MINUTO AL TEMPORIZADOR");
+    }
+
+    if (tipo === "POCION") {
+      if (this.pickupPocion) {
+        this.pickupPocion.style.display = "flex";
+      }
+
+      const luzDePocion = objetoClicado.luzAsociada || root.luzAsociada;
+
+      if (luzDePocion) {
+        this.laberinto.remove(luzDePocion);
+
+        if (typeof luzDePocion.dispose === "function") {
           luzDePocion.dispose();
         }
-
-        this.tienePocion = true;
-        this.sprintActual = this.sprintMax;
-        this.sprintAgotado = false;
-        this.sprintando = false;
-
-        if (this.contenedorSprint) {
-          this.contenedorSprint.style.display = "block";
-        }
-
-        this.actualizarBarraSprint();
-
-        console.log("Has recogido una poción. Sprint desbloqueado");
-        this.mostrarMensajeAlerta("¡SPRINT DESBLOQUEADO!");
       }
 
-      if (objetoClicado.userData.type === "LLAVE") {
-        this.pickupLlave.style.display = "flex";
+      this.tienePocion = true;
+      this.sprintActual = this.sprintMax;
+      this.sprintAgotado = false;
+      this.sprintando = false;
 
-        const root = objetoClicado.userData.root || objetoClicado;
+      if (this.contenedorSprint) {
+        this.contenedorSprint.style.display = "block";
+      }
 
-        const luzDeLlave = objetoClicado.luzAsociada || root.luzAsociada;
-        if (luzDeLlave) {
-          this.laberinto.remove(luzDeLlave);
+      this.actualizarBarraSprint();
+
+      console.log("Has recogido una poción. Sprint desbloqueado");
+      this.mostrarMensajeAlerta("¡SPRINT DESBLOQUEADO!");
+    }
+
+    if (tipo === "LLAVE") {
+      this.pickupLlave.style.display = "flex";
+
+      const luzDeLlave = objetoClicado.luzAsociada || root.luzAsociada;
+
+      if (luzDeLlave) {
+        this.laberinto.remove(luzDeLlave);
+
+        if (typeof luzDeLlave.dispose === "function") {
           luzDeLlave.dispose();
         }
+      }
 
-        root.visible = false;
+      root.visible = false;
 
-        if (!this.llaveEnMano) {
-          this.llaveEnMano = new Llave(1);
+      if (!this.llaveEnMano) {
+        this.llaveEnMano = new Llave(1);
 
-          this.camera.add(this.llaveEnMano);
+        this.camera.add(this.llaveEnMano);
 
-          this.llaveEnMano.position.set(0.3, -0.1, -0.3);
-          this.llaveEnMano.scale.set(0.5, 0.5, 0.5);
-          this.llaveEnMano.rotation.set(0, Math.PI, -Math.PI / 2);
+        this.llaveEnMano.position.set(0.3, -0.1, -0.3);
+        this.llaveEnMano.scale.set(0.5, 0.5, 0.5);
+        this.llaveEnMano.rotation.set(0, Math.PI, -Math.PI / 2);
 
-          this.llaveEnMano.traverse((obj) => {
-            if (obj.isMesh) {
-              obj.castShadow = false;
-              obj.receiveShadow = false;
-            }
-          });
+        this.llaveEnMano.traverse((obj) => {
+          if (obj.isMesh) {
+            obj.castShadow = false;
+            obj.receiveShadow = false;
+          }
+        });
 
-          console.log("Nueva llave creada en la mano");
-        }
+        console.log("Nueva llave creada en la mano");
       }
     }
   }
@@ -485,7 +548,7 @@ class MyScene extends THREE.Scene {
     });
   }
 
-createFlashLight() {
+  createFlashLight() {
     this.flashLight = new THREE.SpotLight(
       0xfff0cc,
       15,
@@ -503,7 +566,7 @@ createFlashLight() {
     this.flashLight.shadow.camera.near = 0.1;
     this.flashLight.shadow.camera.far = 10;
 
-    this.flashLight.shadow.bias = -0.0005; 
+    this.flashLight.shadow.bias = -0.0005;
     this.flashLight.shadow.normalBias = 0.02;
 
     this.flashLight.target.position.set(0, 0, -1);
@@ -626,35 +689,34 @@ createFlashLight() {
     return gui;
   }
 
-createLights() {
-  this.ambientLight = new THREE.AmbientLight(
-    0x888888,
-    this.guiControls.ambientIntensity
-  );
-  this.add(this.ambientLight);
+  createLights() {
+    this.ambientLight = new THREE.AmbientLight(
+      0x888888,
+      this.guiControls.ambientIntensity
+    );
 
-  this.pointLight = new THREE.SpotLight(
-    0xffffff,
-    this.guiControls.lightPower
-  );
+    this.add(this.ambientLight);
 
-  this.pointLight.position.set(0, 8, 0);
-  this.pointLight.angle = Math.PI / 5;
-  this.pointLight.penumbra = 0.8;
-  this.pointLight.decay = 2;
-  this.pointLight.distance = 12;
+    this.pointLight = new THREE.SpotLight(
+      0xffffff,
+      this.guiControls.lightPower
+    );
 
-  this.pointLight.castShadow = true;
-  this.pointLight.shadow.mapSize.width = 1024;
-  this.pointLight.shadow.mapSize.height = 1024;
+    this.pointLight.position.set(0, 8, 0);
+    this.pointLight.angle = Math.PI / 5;
+    this.pointLight.penumbra = 0.8;
+    this.pointLight.decay = 2;
+    this.pointLight.distance = 12;
 
-  // Esto era lo que estaba mal:
-  // antes ponía this.flashLight.shadow...
-  this.pointLight.shadow.bias = -0.0005;
-  this.pointLight.shadow.normalBias = 0.02;
+    this.pointLight.castShadow = true;
+    this.pointLight.shadow.mapSize.width = 1024;
+    this.pointLight.shadow.mapSize.height = 1024;
 
-  this.add(this.pointLight);
-}
+    this.pointLight.shadow.bias = -0.0005;
+    this.pointLight.shadow.normalBias = 0.02;
+
+    this.add(this.pointLight);
+  }
 
   setLightPower(valor) {
     this.pointLight.intensity = valor;
@@ -1128,37 +1190,32 @@ createLights() {
     const elementoAlerta = document.getElementById("mensaje-alerta");
     if (!elementoAlerta) return;
 
-    // Guardamos el texto del mensaje
     elementoAlerta.innerText = texto;
-    // Añadimos la clase para que se vuelva opaco y visible
     elementoAlerta.classList.add("visible");
 
-    // Limpiamos cualquier temporizador previo si el usuario cliquea muy rápido
     if (this.alertaTimeout) {
       clearTimeout(this.alertaTimeout);
     }
 
-    // A los 2 segundos (2000 ms) iniciamos la animación de desaparición
     this.alertaTimeout = setTimeout(() => {
       elementoAlerta.classList.remove("visible");
     }, 2000);
   }
 
   comprobarHuesosParaLlave() {
-    // Si los huesos que llevamos son iguales a los totales que tenía el laberinto
     if (this.contadorHuesos === Laberinto.huesosTotales) {
 
       console.log("¡Has recogido todos los huesos! La llave ha aparecido.");
       this.mostrarMensajeAlerta("¡LA LLAVE HA APARECIDO EN EL LABERINTO!");
 
-      // Buscamos la llave en el array de objetos para hacerla visible junto a su luz
       Laberinto.objetos.forEach((obj) => {
         if (obj.userData && obj.userData.type === "LLAVE") {
           const rootLlave = obj.userData.root || obj;
-          
-          rootLlave.visible = true; // Mostramos la llave
+
+          rootLlave.visible = true;
+
           if (rootLlave.luzAsociada) {
-            rootLlave.luzAsociada.visible = true; // Mostramos su luz dorada
+            rootLlave.luzAsociada.visible = true;
           }
         }
       });
@@ -1166,36 +1223,32 @@ createLights() {
   }
 
   gestionarVictoria() {
-    // 1. Detener el temporizador del juego (asumiendo que manejas un intervalo o flag)
-    this.juegoTerminado = true; 
+    this.juegoTerminado = true;
 
     if (this.cameraControl) {
-      this.cameraControl.unlock(); 
+      this.cameraControl.unlock();
     }
 
-    // 2. Calcular el tiempo empleado
-    const tiempoInicialSegundos = 300; // 05:00 minutos
-    // Aquí pon la variable donde guardes los segundos actuales que le quedaban al jugador:
-    const tiempoRestanteSegundos = this.tiempoRestante || 0; 
+    const tiempoInicialSegundos = 300;
+    const tiempoRestanteSegundos = this.tiempoRestante || 0;
 
     const tiempoTardado = tiempoInicialSegundos - tiempoRestanteSegundos + this.tiempoExtraReloj;
-    
+
     const minutos = Math.floor(tiempoTardado / 60).toString().padStart(2, '0');
     const segundos = (tiempoTardado % 60).toString().padStart(2, '0');
-    
-    // 3. Inyectar el texto del tiempo en el HTML
+
     const textoTiempo = document.getElementById("tiempo-final");
+
     if (textoTiempo) {
       textoTiempo.innerText = `Tiempo empleado: ${minutos}:${segundos}`;
     }
 
-    // 4. Liberar el bloqueo del puntero del ratón para poder hacer clic en el botón
     if (this.cameraControl && this.cameraControl.unlock) {
       this.cameraControl.unlock();
     }
 
-    // 5. Mostrar la pantalla final de victoria añadiendo la clase CSS
     const pantallaVictoria = document.getElementById("pantalla-victoria");
+
     if (pantallaVictoria) {
       pantallaVictoria.classList.add("visible");
     }
@@ -1204,47 +1257,40 @@ createLights() {
   iniciarSecuenciaIntro() {
     const pantalla = document.getElementById("pantalla-intro");
     const contenedorTexto = document.getElementById("texto-intro");
+
     if (!pantalla || !contenedorTexto) return;
 
     let indiceFrase = 0;
 
     const mostrarSiguienteFrase = () => {
-      // Si ya hemos mostrado todas las frases, terminamos la intro
       if (indiceFrase >= this.frasesIntro.length) {
-        
-        // 1. Desvanecemos la pantalla negra del fondo
+
         pantalla.style.opacity = "0";
-        
+
         setTimeout(() => {
-          pantalla.style.display = "none"; // La quitamos del DOM para que no estorbe
-          this.enIntro = false;            // Marcamos que la intro ha terminado
-          
+          pantalla.style.display = "none";
+          this.enIntro = false;
+
           console.log("Intro finalizada. ¡Empieza la partida!");
           this.mostrarMensajeAlerta("¡ENCUENTRA LA SALIDA!");
-        }, 1500); // Espera a que termine la transición de opacidad del fondo
-        
+        }, 1500);
+
         return;
       }
 
-      // 2. Cambiamos el texto e iniciamos el fade-in de la frase actual
       contenedorTexto.innerText = this.frasesIntro[indiceFrase];
       contenedorTexto.classList.add("visible");
 
-      // 3. Dejamos la frase visible durante 3 segundos (3000ms)
       setTimeout(() => {
-        // Quitamos la clase para que haga fade-out (se desvanezca)
         contenedorTexto.classList.remove("visible");
-        
-        // Avanzamos el índice de la frase
+
         indiceFrase++;
-        
-        // Esperamos 1 segundo en negro entre frase y frase antes de lanzar la siguiente
+
         setTimeout(mostrarSiguienteFrase, 1000);
-        
+
       }, 3000);
     };
 
-    // Lanzamos la primera iteración de la secuencia de frases
     mostrarSiguienteFrase();
   }
 
@@ -1323,7 +1369,7 @@ createLights() {
         // Si no tiene tipo, asumimos que es muro del laberinto
         if (!tipo) return true;
 
-        // Solo bloquean hueso y reloj
+        // Bloquean hueso, reloj y puerta
         return tipo === "HUESO" || tipo === "RELOJ" || tipo === "PUERTA";
       };
 
@@ -1379,28 +1425,21 @@ createLights() {
     }
 
     if (seEstaMoviendo && !this.juegoTerminado) {
-      // Si corre con la poción, podemos acelerar el ritmo del balanceo
       const multiplicadorVelocidad = this.sprintando ? 1.5 : 1.0;
-      
-      // Avanzamos el temporizador en base al delta de tiempo de renderizado
+
       this.timerBobbing += delta * this.velocidadBobbing * multiplicadorVelocidad;
-      
-      // Calculamos el desplazamiento vertical con el seno
+
       const desplazamientoY = Math.sin(this.timerBobbing) * this.intensidadBobbing;
-      
-      // Aplicamos la altura base del jugador + el balanceo
+
       this.camera.position.y = this.alturaJugador + desplazamientoY;
 
     } else {
-      // Si el jugador está quieto, devolvemos la cámara suavemente a su altura normal
-      // Usamos una interpolación lineal (lerp) para que el retorno no sea un golpe seco
       this.camera.position.y = THREE.MathUtils.lerp(
-        this.camera.position.y, 
-        this.alturaJugador, 
-        0.1 // Velocidad de retorno
+        this.camera.position.y,
+        this.alturaJugador,
+        0.1
       );
-      
-      // Reseteamos sutilmente el timer si se detiene para evitar saltos raros al reanudar
+
       if (Math.abs(this.camera.position.y - this.alturaJugador) < 0.01) {
         this.timerBobbing = 0;
       }
@@ -1413,6 +1452,7 @@ createLights() {
       this.laberinto.traverse((obj) => {
         if (obj.userData && obj.userData.type === "PUERTA") {
           const puerta = obj.userData.root;
+
           if (puerta && typeof puerta.update === 'function') {
             puerta.update(delta);
           }
